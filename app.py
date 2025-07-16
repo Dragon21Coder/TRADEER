@@ -8,6 +8,7 @@ from utils.data_fetcher import StockDataFetcher
 from utils.chart_generator import ChartGenerator
 from utils.news_sentiment import NewsSentimentAnalyzer
 from utils.enhanced_backtesting import EnhancedBacktestingEngine
+from utils.help_system import help_system
 from ml.adaptive_strategy import AdaptiveStrategyEngine
 from database.models import init_database, get_db_session
 
@@ -480,6 +481,9 @@ def main():
         
         # Trading simulator toggle
         trading_mode = st.checkbox("Enable Trading Simulator", value=False)
+        
+        # Add comprehensive help system to sidebar
+        help_system.add_help_sidebar()
         
         if trading_mode:
             st.subheader("💰 Trading Simulator")
@@ -1135,51 +1139,55 @@ def display_stock_analysis(chart_type):
             st.markdown(
                 f"""
                 <div class="metric-card" style="text-align: center; background: linear-gradient(135deg, {return_color}20 0%, {return_color}10 100%);">
-                    <h3 style="color: {return_color}; margin: 0; font-size: 2.5rem;">{backtest.get('total_return_pct', 0):.2f}%</h3>
+                    <h3 style="color: {return_color}; margin: 0; font-size: 2.5rem;">{backtest.get('total_return_pct', 0):.2f}%{help_system.show_tooltip('total_return')}</h3>
                     <p style="margin: 0.5rem 0 0 0; color: #f8fafc; font-weight: 600;">Total Return</p>
                     <small style="color: #94a3b8;">vs {backtest.get('initial_capital', 10000):,.0f} initial</small>
                 </div>
                 """, 
                 unsafe_allow_html=True
             )
+            help_system.show_detailed_help('total_return')
         
         with col2:
             st.markdown(
                 f"""
                 <div class="metric-card" style="text-align: center;">
-                    <h3 style="color: #22c55e; margin: 0; font-size: 2rem;">{metrics.get('annualized_return_pct', 0):.2f}%</h3>
+                    <h3 style="color: #22c55e; margin: 0; font-size: 2rem;">{metrics.get('annualized_return_pct', 0):.2f}%{help_system.show_tooltip('annualized_return')}</h3>
                     <p style="margin: 0.5rem 0 0 0; color: #f8fafc; font-weight: 600;">Annualized Return</p>
                     <small style="color: #94a3b8;">Expected yearly performance</small>
                 </div>
                 """, 
                 unsafe_allow_html=True
             )
+            help_system.show_detailed_help('annualized_return')
         
         with col3:
             sharpe_color = "#00FF88" if metrics.get('sharpe_ratio', 0) > 1 else "#FFD700" if metrics.get('sharpe_ratio', 0) > 0.5 else "#FF4444"
             st.markdown(
                 f"""
                 <div class="metric-card" style="text-align: center;">
-                    <h3 style="color: {sharpe_color}; margin: 0; font-size: 2rem;">{metrics.get('sharpe_ratio', 0):.2f}</h3>
+                    <h3 style="color: {sharpe_color}; margin: 0; font-size: 2rem;">{metrics.get('sharpe_ratio', 0):.2f}{help_system.show_tooltip('sharpe_ratio')}</h3>
                     <p style="margin: 0.5rem 0 0 0; color: #f8fafc; font-weight: 600;">Sharpe Ratio</p>
                     <small style="color: #94a3b8;">Risk-adjusted returns</small>
                 </div>
                 """, 
                 unsafe_allow_html=True
             )
+            help_system.show_detailed_help('sharpe_ratio')
         
         with col4:
             drawdown_color = "#00FF88" if metrics.get('max_drawdown_pct', 0) < 10 else "#FFD700" if metrics.get('max_drawdown_pct', 0) < 20 else "#FF4444"
             st.markdown(
                 f"""
                 <div class="metric-card" style="text-align: center;">
-                    <h3 style="color: {drawdown_color}; margin: 0; font-size: 2rem;">{metrics.get('max_drawdown_pct', 0):.2f}%</h3>
+                    <h3 style="color: {drawdown_color}; margin: 0; font-size: 2rem;">{metrics.get('max_drawdown_pct', 0):.2f}%{help_system.show_tooltip('max_drawdown')}</h3>
                     <p style="margin: 0.5rem 0 0 0; color: #f8fafc; font-weight: 600;">Max Drawdown</p>
                     <small style="color: #94a3b8;">Largest decline</small>
                 </div>
                 """, 
                 unsafe_allow_html=True
             )
+            help_system.show_detailed_help('max_drawdown')
         
         # Advanced metrics row
         st.markdown("### 📊 Advanced Performance Metrics")
@@ -1190,23 +1198,25 @@ def display_stock_analysis(chart_type):
             st.markdown(
                 f"""
                 <div class="metric-card" style="text-align: center;">
-                    <h4 style="color: {win_rate_color}; margin: 0;">{metrics.get('win_rate_pct', 0):.1f}%</h4>
+                    <h4 style="color: {win_rate_color}; margin: 0;">{metrics.get('win_rate_pct', 0):.1f}%{help_system.show_tooltip('win_rate')}</h4>
                     <p style="margin: 0.5rem 0 0 0; color: #f8fafc;">Win Rate</p>
                 </div>
                 """, 
                 unsafe_allow_html=True
             )
+            help_system.show_detailed_help('win_rate')
         
         with col2:
             st.markdown(
                 f"""
                 <div class="metric-card" style="text-align: center;">
-                    <h4 style="color: #00D97F; margin: 0;">{metrics.get('profit_factor', 0):.2f}</h4>
+                    <h4 style="color: #00D97F; margin: 0;">{metrics.get('profit_factor', 0):.2f}{help_system.show_tooltip('profit_factor')}</h4>
                     <p style="margin: 0.5rem 0 0 0; color: #f8fafc;">Profit Factor</p>
                 </div>
                 """, 
                 unsafe_allow_html=True
             )
+            help_system.show_detailed_help('profit_factor')
         
         with col3:
             st.markdown(
@@ -1224,12 +1234,13 @@ def display_stock_analysis(chart_type):
             st.markdown(
                 f"""
                 <div class="metric-card" style="text-align: center;">
-                    <h4 style="color: #00FF88; margin: 0;">{adaptations}</h4>
+                    <h4 style="color: #00FF88; margin: 0;">{adaptations}{help_system.show_tooltip('ml_adaptations')}</h4>
                     <p style="margin: 0.5rem 0 0 0; color: #f8fafc;">ML Adaptations</p>
                 </div>
                 """, 
                 unsafe_allow_html=True
             )
+            help_system.show_detailed_help('ml_adaptations')
         
         # Detailed analysis
         if 'detailed_analysis' in backtest:
@@ -1265,6 +1276,31 @@ def display_stock_analysis(chart_type):
             
             if not adaptation_df.empty:
                 st.dataframe(adaptation_df, use_container_width=True)
+                
+                # Educational insights about ML performance
+                st.markdown("#### 🎓 Educational Insights")
+                insights = help_system.get_educational_insights(backtest)
+                for insight in insights:
+                    st.info(insight)
+            
+            # Real-time learning status
+            st.markdown("#### 🧠 Continuous Learning Status")
+            learning_status = "AI continuously adapts trading strategies based on real-time market performance"
+            st.success(f"✅ {learning_status}")
+            
+            if len(backtest.get('adaptation_events', [])) > 0:
+                last_adaptation = backtest['adaptation_events'][-1]
+                st.info(f"🔄 Last adaptation: Day {last_adaptation.get('day', 0)} - {last_adaptation.get('event', 'Unknown')}")
+        
+        # Portfolio performance visualization
+        if 'charts' in backtest and backtest['charts']:
+            st.markdown("#### 📈 Portfolio Performance Visualization")
+            try:
+                import json
+                portfolio_chart_data = json.loads(backtest['charts']['portfolio_chart'])
+                st.plotly_chart(portfolio_chart_data, use_container_width=True)
+            except Exception as e:
+                st.warning(f"Chart visualization will be available after completing backtesting analysis")
     
     elif data.get('backtest_results') and data['backtest_results'].get('error'):
         st.warning(f"Backtesting Error: {data['backtest_results']['error']}")

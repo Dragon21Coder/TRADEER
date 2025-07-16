@@ -62,24 +62,31 @@ class EnhancedBacktestingEngine:
                     'result': training_result
                 })
             
-            # Main backtesting loop
-            for i in range(50, len(data)):
+            # Main backtesting loop - Enhanced for more trades
+            for i in range(30, len(data)):  # Start earlier for more trading opportunities
                 current_date = data.index[i]
                 current_price = data.iloc[i]['Close']
                 
                 # Get historical data up to current point
                 historical_data = data.iloc[:i+1]
                 
-                # Generate trading signal
+                # Generate trading signal with enhanced frequency
+                signal_info = None
                 if use_ml and len(historical_data) >= 20:
                     try:
                         signal_info = self.adaptive_engine.generate_adaptive_signals(historical_data)
+                        # Enhance signal strength for more active trading
+                        if signal_info.get('confidence', 0) > 0.2:  # Lower threshold for more trades
+                            signal_info['strength'] = min(5, signal_info.get('strength', 0) * 1.5)
                     except Exception as e:
                         # Fallback to traditional signals if ML fails
                         signal_info = self._generate_traditional_signal(historical_data)
                         signal_info['ml_error'] = str(e)
-                else:
+                        signal_info['fallback_used'] = True
+                
+                if not signal_info:
                     signal_info = self._generate_traditional_signal(historical_data)
+                    signal_info['traditional_signal'] = True
                 
                 # Execute trades based on signals
                 trade_executed = self._execute_trade(
@@ -119,28 +126,45 @@ class EnhancedBacktestingEngine:
                     'signal': signal_info.get('signal', 'HOLD')
                 })
                 
-                # Adaptive retraining
-                if use_ml and i % adaptation_frequency == 0 and len(trades_executed) >= 5:
-                    recent_trades = trades_executed[-10:] if len(trades_executed) >= 10 else trades_executed
-                    adaptation_result = self.adaptive_engine.adapt_strategy(recent_trades)
+                # Enhanced adaptive retraining - More frequent and aggressive
+                if use_ml and i % adaptation_frequency == 0:
+                    # Adapt strategy based on recent performance
+                    if len(trades_executed) >= 3:  # Lower threshold for faster adaptation
+                        recent_trades = trades_executed[-15:] if len(trades_executed) >= 15 else trades_executed
+                        
+                        # Add profit/loss to recent trades
+                        for trade in recent_trades:
+                            if 'profit_loss' not in trade:
+                                # Calculate profit/loss for completed trades
+                                if trade['action'] == 'BUY':
+                                    # For buy trades, profit is current price - buy price
+                                    trade['profit_loss'] = (current_price - trade['price']) * trade['shares']
+                                else:
+                                    # For sell trades, profit was already realized
+                                    trade['profit_loss'] = trade.get('value', 0) - (trade['shares'] * trade['price'])
+                        
+                        adaptation_result = self.adaptive_engine.adapt_strategy(recent_trades)
+                        
+                        if adaptation_result.get('adaptations'):
+                            adaptation_events.append({
+                                'day': i,
+                                'event': 'Real-time Strategy Adaptation',
+                                'adaptations': adaptation_result['adaptations'],
+                                'new_weights': adaptation_result['new_weights'],
+                                'performance_improvement': sum([t.get('profit_loss', 0) for t in recent_trades[-5:]])
+                            })
                     
-                    if adaptation_result.get('adaptations'):
-                        adaptation_events.append({
-                            'day': i,
-                            'event': 'Strategy Adaptation',
-                            'adaptations': adaptation_result['adaptations'],
-                            'new_weights': adaptation_result['new_weights']
-                        })
-                    
-                    # Retrain models with recent data
-                    if i % (adaptation_frequency * 3) == 0:  # Every 3 adaptation cycles
-                        recent_data = data.iloc[max(0, i-200):i+1]  # Last 200 days
-                        retrain_result = self.adaptive_engine.train_models(recent_data)
-                        adaptation_events.append({
-                            'day': i,
-                            'event': 'Model Retraining',
-                            'result': retrain_result
-                        })
+                    # More frequent model retraining for continuous learning
+                    if i % (adaptation_frequency * 2) == 0:  # Every 2 adaptation cycles
+                        recent_data = data.iloc[max(0, i-150):i+1]  # Last 150 days
+                        if len(recent_data) >= 50:
+                            retrain_result = self.adaptive_engine.train_models(recent_data)
+                            adaptation_events.append({
+                                'day': i,
+                                'event': 'Continuous Learning Update',
+                                'result': retrain_result,
+                                'model_performance': retrain_result.get('price_model_accuracy', 0)
+                            })
             
             # Calculate comprehensive performance metrics
             performance_metrics = self._calculate_comprehensive_metrics(
@@ -250,13 +274,16 @@ class EnhancedBacktestingEngine:
         strength = signal_info.get('strength', 0)
         confidence = signal_info.get('confidence', 0)
         
-        # Only trade with sufficient confidence
-        if confidence < 0.3:
+        # Only trade with sufficient confidence - Lowered for more active trading
+        if confidence < 0.15:  # Lower threshold for more trading opportunities
             return None
         
-        if 'BUY' in signal and cash > 100:  # Minimum $100 for buy
-            # Calculate position size based on signal strength
-            position_size = min(0.2, strength * 0.05)  # Max 20% of cash
+        if 'BUY' in signal and cash > 50:  # Lower minimum for more trades
+            # More aggressive position sizing for increased trading activity
+            base_position_size = 0.15  # Base 15% of cash
+            strength_multiplier = min(2.0, strength * 0.1)  # Up to 2x based on strength
+            position_size = min(0.25, base_position_size * strength_multiplier)  # Max 25% of cash
+            
             investment = cash * position_size
             shares_to_buy = investment / (price * (1 + self.commission))
             
@@ -278,8 +305,11 @@ class EnhancedBacktestingEngine:
             }
         
         elif 'SELL' in signal and shares > 0:
-            # Sell portion based on signal strength
-            sell_ratio = min(0.5, strength * 0.1)  # Max 50% of holdings
+            # More dynamic selling based on signal strength and market conditions
+            base_sell_ratio = 0.3  # Base 30% of holdings
+            strength_multiplier = min(2.0, strength * 0.15)  # Up to 2x based on strength
+            sell_ratio = min(0.6, base_sell_ratio * strength_multiplier)  # Max 60% of holdings
+            
             shares_to_sell = shares * sell_ratio
             sale_value = shares_to_sell * price * (1 - self.commission)
             
