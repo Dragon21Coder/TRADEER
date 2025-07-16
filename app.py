@@ -7,7 +7,9 @@ import time
 from utils.data_fetcher import StockDataFetcher
 from utils.chart_generator import ChartGenerator
 from utils.news_sentiment import NewsSentimentAnalyzer
-from utils.backtesting_engine import BacktestingEngine
+from utils.enhanced_backtesting import EnhancedBacktestingEngine
+from ml.adaptive_strategy import AdaptiveStrategyEngine
+from database.models import init_database, get_db_session
 
 # Configure page
 st.set_page_config(
@@ -17,110 +19,245 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for professional UI
+# Market-Ready Professional UI Styling
 st.markdown("""
 <style>
-/* Main container styling */
+/* Import professional fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Global styling overrides */
 .main .block-container {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
+    padding: 1rem 2rem;
     max-width: 100%;
+    font-family: 'Inter', sans-serif;
 }
 
-/* Metric cards styling */
+/* Advanced gradient background */
+.stApp {
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 25%, #16213e 50%, #0a0e27 100%);
+    background-attachment: fixed;
+}
+
+/* Professional metric cards */
 [data-testid="metric-container"] {
-    background-color: #262730;
-    border: 1px solid #404040;
-    padding: 1rem;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Headers styling */
-h1, h2, h3 {
-    color: #FAFAFA;
-    font-weight: 600;
-}
-
-/* Button styling */
-.stButton > button {
-    background: linear-gradient(45deg, #00FF88, #00CC70);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    font-weight: 600;
+    background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
+    border: 1px solid #475569;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
     transition: all 0.3s ease;
 }
 
-.stButton > button:hover {
-    background: linear-gradient(45deg, #00CC70, #00AA5C);
+[data-testid="metric-container"]:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,255,136,0.3);
+    box-shadow: 0 12px 40px rgba(0, 255, 136, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Selectbox styling */
+/* Enhanced typography */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', sans-serif;
+    color: #f8fafc;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+/* Premium button styling */
+.stButton > button {
+    background: linear-gradient(135deg, #00FF88 0%, #00D97F 50%, #00C777 100%);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 16px rgba(0, 255, 136, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.stButton > button:hover {
+    background: linear-gradient(135deg, #00D97F 0%, #00C777 50%, #00B570 100%);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 255, 136, 0.4);
+}
+
+.stButton > button:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+/* Sophisticated form controls */
 .stSelectbox > div > div {
-    background-color: #262730;
-    border: 1px solid #404040;
-    border-radius: 8px;
+    background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
+    border: 1px solid #475569;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    color: #f8fafc;
 }
 
-/* Info box styling */
-.stInfo {
-    background-color: #1a3a4a;
-    border-left: 4px solid #00FF88;
-    padding: 1rem;
-    border-radius: 8px;
+.stTextInput > div > div > input {
+    background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
+    border: 1px solid #475569;
+    border-radius: 12px;
+    color: #f8fafc;
+    padding: 0.75rem 1rem;
 }
 
-/* Success box styling */
+/* Premium notification styling */
 .stSuccess {
-    background-color: #1a4a2a;
-    border-left: 4px solid #00FF88;
-    padding: 1rem;
-    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 217, 127, 0.05) 100%);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    backdrop-filter: blur(10px);
 }
 
-/* Warning box styling */
+.stInfo {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    backdrop-filter: blur(10px);
+}
+
 .stWarning {
-    background-color: #4a3a1a;
-    border-left: 4px solid #FFD700;
-    padding: 1rem;
-    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    backdrop-filter: blur(10px);
 }
 
-/* Expander styling */
+/* Advanced expander styling */
 .streamlit-expanderHeader {
-    background-color: #262730;
-    border-radius: 8px;
-    border: 1px solid #404040;
+    background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
+    border: 1px solid #475569;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
 }
 
-/* Chart container styling */
+.streamlit-expanderHeader:hover {
+    border-color: #00FF88;
+    box-shadow: 0 4px 16px rgba(0, 255, 136, 0.2);
+}
+
+/* Premium chart containers */
 .stPlotlyChart {
-    background-color: #262730;
-    border-radius: 10px;
-    padding: 1rem;
-    border: 1px solid #404040;
+    background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
+    border: 1px solid #475569;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
 }
 
-/* Professional section dividers */
+/* Elegant section dividers */
 hr {
     border: none;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #00FF88, transparent);
-    margin: 2rem 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #00FF88 20%, #00D97F 50%, #00FF88 80%, transparent 100%);
+    margin: 3rem 0;
+    opacity: 0.6;
 }
 
-/* Card-like containers */
+/* Premium card containers */
 .metric-card {
-    background: linear-gradient(135deg, #262730 0%, #2a2a3a 100%);
+    background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
+    border: 1px solid #475569;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #00FF88 0%, #00D97F 50%, #00FF88 100%);
+    opacity: 0.8;
+}
+
+/* Sidebar enhancements */
+.css-1d391kg {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    border-right: 1px solid #334155;
+}
+
+/* Tabs styling */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 1rem;
+    background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
     border-radius: 12px;
-    padding: 1.5rem;
-    border: 1px solid #404040;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1rem;
+    padding: 0.5rem;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background: transparent;
+    border-radius: 8px;
+    color: #94a3b8;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(135deg, #00FF88 0%, #00D97F 100%);
+    color: #000;
+    box-shadow: 0 4px 16px rgba(0, 255, 136, 0.3);
+}
+
+/* Loading animation */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.loading {
+    animation: pulse 2s infinite;
+}
+
+/* Professional scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #00FF88, #00D97F);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #00D97F, #00C777);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .main .block-container {
+        padding: 1rem;
+    }
+    
+    .metric-card {
+        padding: 1rem;
+    }
+}
+
+/* Header glow effect */
+.header-glow {
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -132,12 +269,25 @@ if 'current_symbol' not in st.session_state:
     st.session_state.current_symbol = ""
 
 def main():
-    # Professional title header
+    # Initialize database
+    try:
+        init_database()
+    except Exception as e:
+        st.error(f"Database initialization failed: {e}")
+    
+    # Market-Ready Professional Header
     st.markdown("""
-    <div style="text-align: center; padding: 2rem 0; background: linear-gradient(135deg, #262730 0%, #1a1a2e 100%); border-radius: 15px; margin-bottom: 2rem; border: 1px solid #404040;">
-        <h1 style="color: #00FF88; font-size: 3rem; margin: 0; text-shadow: 0 0 10px rgba(0,255,136,0.3);">🌍 Global Stock Analysis</h1>
-        <h2 style="color: #FAFAFA; font-size: 1.5rem; margin: 0.5rem 0 0 0; font-weight: 300;">Professional Trading Dashboard</h2>
-        <p style="color: #CCCCCC; margin: 0.5rem 0 0 0;">Real-time data • Technical indicators • News sentiment • Backtesting • Trading simulation</p>
+    <div style="text-align: center; padding: 3rem 2rem; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); border-radius: 20px; margin-bottom: 2rem; border: 1px solid #475569; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #00FF88 0%, #00D97F 50%, #00FF88 100%);"></div>
+        <h1 class="header-glow" style="color: #00FF88; font-size: 3.5rem; margin: 0; font-weight: 700; letter-spacing: -0.02em;">🚀 TradeMaster Pro</h1>
+        <h2 style="color: #f8fafc; font-size: 1.8rem; margin: 1rem 0; font-weight: 400; opacity: 0.9;">AI-Powered Trading Intelligence Platform</h2>
+        <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap;">
+            <span style="color: #00FF88; font-weight: 600;">📊 ML Backtesting</span>
+            <span style="color: #00D97F; font-weight: 600;">🤖 Adaptive AI</span>
+            <span style="color: #22c55e; font-weight: 600;">📈 Real-time Analysis</span>
+            <span style="color: #10b981; font-weight: 600;">📰 News Sentiment</span>
+        </div>
+        <p style="color: #94a3b8; margin: 1.5rem 0 0 0; font-size: 1.1rem; max-width: 600px; margin-left: auto; margin-right: auto;">Professional-grade trading platform with machine learning, adaptive strategies, and comprehensive market intelligence</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -302,11 +452,31 @@ def main():
         chart_types = ["Candlestick", "Line", "OHLC", "Bollinger Bands", "MACD Analysis"]
         chart_type = st.selectbox("Chart Type", chart_types)
         
-        # Real-time options
-        st.subheader("📡 Real-Time Features")
-        auto_refresh = st.checkbox("🔄 Auto-refresh every 15 seconds", value=False)
-        show_news = st.checkbox("📰 Show News Sentiment", value=True)
-        show_backtest = st.checkbox("📊 Show Backtesting Results", value=True)
+        # Advanced Features Section
+        st.markdown("""
+        <div class="metric-card">
+            <h3 style="color: #00FF88; margin: 0 0 1rem 0;">🚀 Advanced Features</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Feature toggles with enhanced styling
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            auto_refresh = st.checkbox("🔄 Real-time Auto-refresh", value=False, 
+                                     help="Enable automatic data refresh for live trading")
+            show_news = st.checkbox("📰 News Sentiment Analysis", value=True,
+                                  help="AI-powered news sentiment analysis for market insights")
+            use_ml_backtest = st.checkbox("🤖 ML-Enhanced Backtesting", value=True,
+                                        help="Use machine learning for adaptive strategy backtesting")
+            
+        with col2:
+            show_backtest = st.checkbox("📊 Advanced Backtesting", value=True,
+                                      help="Comprehensive backtesting with detailed analytics")
+            save_results = st.checkbox("💾 Save to Database", value=True,
+                                     help="Store analysis results in database for historical tracking")
+            enable_alerts = st.checkbox("🔔 Trading Alerts", value=False,
+                                      help="Enable trading signal alerts and notifications")
         
         # Trading simulator toggle
         trading_mode = st.checkbox("Enable Trading Simulator", value=False)
@@ -388,14 +558,31 @@ def main():
                                 }]
                                 sentiment_summary = news_analyzer.get_overall_sentiment(news_data)
                         
-                        # Run backtesting if enabled
+                        # Run enhanced backtesting if enabled
                         backtest_results = None
                         if show_backtest:
                             try:
-                                backtesting_engine = BacktestingEngine()
-                                backtest_results = backtesting_engine.run_backtest(stock_symbol, "1y", 10000)
+                                with st.spinner("🤖 Running ML-enhanced backtesting..."):
+                                    enhanced_engine = EnhancedBacktestingEngine(initial_capital=10000)
+                                    backtest_results = enhanced_engine.run_comprehensive_backtest(
+                                        stock_symbol, 
+                                        historical_data_with_indicators, 
+                                        use_ml=use_ml_backtest,
+                                        adaptation_frequency=20
+                                    )
+                                    if backtest_results.get('error'):
+                                        st.warning(f"Enhanced backtesting: {backtest_results['error']}")
+                                    else:
+                                        st.success(f"✅ Completed ML backtesting with {backtest_results['performance_metrics'].get('total_trades', 0)} trades")
                             except Exception as e:
-                                st.warning(f"Could not run backtesting: {e}")
+                                st.warning(f"Enhanced backtesting error: {e}")
+                                # Fallback to basic backtesting
+                                try:
+                                    from utils.backtesting_engine import BacktestingEngine
+                                    basic_engine = BacktestingEngine()
+                                    backtest_results = basic_engine.run_backtest(stock_symbol, "1y", 10000)
+                                except Exception as e2:
+                                    st.error(f"All backtesting failed: {e2}")
                         
                         st.session_state.stock_data = {
                             'info': stock_info,
@@ -908,76 +1095,214 @@ def display_stock_analysis(chart_type):
                 total_return = total_portfolio_value - 1000.0  # Starting amount was $1000
                 st.metric("Total Return", f"${total_return:.2f}", f"{(total_return/1000.0)*100:.2f}%")
     
-    # Backtesting Results Section
-    if data.get('backtest_results'):
+
+    # Enhanced Backtesting Results Section
+    if data.get('backtest_results') and not data['backtest_results'].get('error'):
         st.markdown("---")
-        st.subheader("📊 Strategy Backtesting Results")
+        
+        # Professional backtesting header
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 16px; padding: 2rem; margin: 1rem 0; border: 1px solid #475569; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+            <h2 style="color: #00FF88; margin: 0; display: flex; align-items: center;">
+                🤖 ML-Enhanced Backtesting Results
+                <span style="margin-left: auto; font-size: 0.8rem; color: #94a3b8;">Advanced Strategy Analysis</span>
+            </h2>
+        </div>
+        """, unsafe_allow_html=True)
         
         backtest = data['backtest_results']
+        metrics = backtest.get('performance_metrics', {})
         
-        # Performance overview
+        # Strategy rating display
+        if 'detailed_analysis' in backtest and 'strategy_rating' in backtest['detailed_analysis']:
+            rating = backtest['detailed_analysis']['strategy_rating']
+            st.markdown(
+                f"""
+                <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, {rating['color']}20 0%, {rating['color']}10 100%); border-radius: 16px; margin: 1rem 0; border: 1px solid {rating['color']}40;">
+                    <h1 style="color: {rating['color']}; margin: 0; font-size: 3rem;">{rating['score']}/100</h1>
+                    <h3 style="color: {rating['color']}; margin: 0.5rem 0;">{rating['rating']} Strategy</h3>
+                    <p style="color: #94a3b8; margin: 0;">Performance Score: {rating['percentage']:.1f}%</p>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+        
+        # Key performance metrics
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            return_color = "green" if backtest['total_return_pct'] > 0 else "red"
+            return_color = "#00FF88" if backtest.get('total_return_pct', 0) > 0 else "#FF4444"
             st.markdown(
-                f"<div style='text-align: center; padding: 15px; background-color: {return_color}20; border-radius: 10px;'>"
-                f"<h3 style='color: {return_color}; margin: 0;'>{backtest['total_return_pct']:.2f}%</h3>"
-                f"<p style='margin: 0; color: #FAFAFA;'>Total Return</p>"
-                f"</div>", 
+                f"""
+                <div class="metric-card" style="text-align: center; background: linear-gradient(135deg, {return_color}20 0%, {return_color}10 100%);">
+                    <h3 style="color: {return_color}; margin: 0; font-size: 2.5rem;">{backtest.get('total_return_pct', 0):.2f}%</h3>
+                    <p style="margin: 0.5rem 0 0 0; color: #f8fafc; font-weight: 600;">Total Return</p>
+                    <small style="color: #94a3b8;">vs {backtest.get('initial_capital', 10000):,.0f} initial</small>
+                </div>
+                """, 
                 unsafe_allow_html=True
             )
         
         with col2:
-            st.metric(
-                "Annualized Return", 
-                f"{backtest['annualized_return']:.2f}%",
-                help="Expected yearly return based on historical performance"
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center;">
+                    <h3 style="color: #22c55e; margin: 0; font-size: 2rem;">{metrics.get('annualized_return_pct', 0):.2f}%</h3>
+                    <p style="margin: 0.5rem 0 0 0; color: #f8fafc; font-weight: 600;">Annualized Return</p>
+                    <small style="color: #94a3b8;">Expected yearly performance</small>
+                </div>
+                """, 
+                unsafe_allow_html=True
             )
         
         with col3:
-            st.metric(
-                "Sharpe Ratio", 
-                f"{backtest['sharpe_ratio']:.2f}",
-                help="Risk-adjusted return (>1 is good, >2 is excellent)"
+            sharpe_color = "#00FF88" if metrics.get('sharpe_ratio', 0) > 1 else "#FFD700" if metrics.get('sharpe_ratio', 0) > 0.5 else "#FF4444"
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center;">
+                    <h3 style="color: {sharpe_color}; margin: 0; font-size: 2rem;">{metrics.get('sharpe_ratio', 0):.2f}</h3>
+                    <p style="margin: 0.5rem 0 0 0; color: #f8fafc; font-weight: 600;">Sharpe Ratio</p>
+                    <small style="color: #94a3b8;">Risk-adjusted returns</small>
+                </div>
+                """, 
+                unsafe_allow_html=True
             )
         
         with col4:
-            st.metric(
-                "Max Drawdown", 
-                f"{backtest['max_drawdown_pct']:.2f}%",
-                help="Largest peak-to-trough decline"
+            drawdown_color = "#00FF88" if metrics.get('max_drawdown_pct', 0) < 10 else "#FFD700" if metrics.get('max_drawdown_pct', 0) < 20 else "#FF4444"
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center;">
+                    <h3 style="color: {drawdown_color}; margin: 0; font-size: 2rem;">{metrics.get('max_drawdown_pct', 0):.2f}%</h3>
+                    <p style="margin: 0.5rem 0 0 0; color: #f8fafc; font-weight: 600;">Max Drawdown</p>
+                    <small style="color: #94a3b8;">Largest decline</small>
+                </div>
+                """, 
+                unsafe_allow_html=True
             )
         
-        # Trading statistics
+        # Advanced metrics row
+        st.markdown("### 📊 Advanced Performance Metrics")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            win_rate_color = "#00FF88" if metrics.get('win_rate_pct', 0) > 60 else "#FFD700" if metrics.get('win_rate_pct', 0) > 50 else "#FF4444"
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center;">
+                    <h4 style="color: {win_rate_color}; margin: 0;">{metrics.get('win_rate_pct', 0):.1f}%</h4>
+                    <p style="margin: 0.5rem 0 0 0; color: #f8fafc;">Win Rate</p>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+        
+        with col2:
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center;">
+                    <h4 style="color: #00D97F; margin: 0;">{metrics.get('profit_factor', 0):.2f}</h4>
+                    <p style="margin: 0.5rem 0 0 0; color: #f8fafc;">Profit Factor</p>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+        
+        with col3:
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center;">
+                    <h4 style="color: #22c55e; margin: 0;">{metrics.get('total_trades', 0)}</h4>
+                    <p style="margin: 0.5rem 0 0 0; color: #f8fafc;">Total Trades</p>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+        
+        with col4:
+            adaptations = len(backtest.get('adaptation_events', []))
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center;">
+                    <h4 style="color: #00FF88; margin: 0;">{adaptations}</h4>
+                    <p style="margin: 0.5rem 0 0 0; color: #f8fafc;">ML Adaptations</p>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+        
+        # Detailed analysis
+        if 'detailed_analysis' in backtest:
+            analysis = backtest['detailed_analysis']
+            
+            # Insights and recommendations
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if analysis.get('strengths'):
+                    st.markdown("#### ✅ Strategy Strengths")
+                    for strength in analysis['strengths']:
+                        st.success(f"✓ {strength}")
+            
+            with col2:
+                if analysis.get('recommendations'):
+                    st.markdown("#### 💡 Optimization Recommendations")
+                    for rec in analysis['recommendations']:
+                        st.info(f"→ {rec}")
+        
+        # ML Adaptation timeline
+        if backtest.get('adaptation_events'):
+            st.markdown("#### 🤖 Machine Learning Adaptations")
+            
+            adaptation_df = pd.DataFrame([
+                {
+                    'Day': event.get('day', 0),
+                    'Event': event.get('event', 'Unknown'),
+                    'Details': len(event.get('adaptations', [])) if event.get('adaptations') else 'Initial Training'
+                }
+                for event in backtest['adaptation_events']
+            ])
+            
+            if not adaptation_df.empty:
+                st.dataframe(adaptation_df, use_container_width=True)
+    
+    elif data.get('backtest_results') and data['backtest_results'].get('error'):
+        st.warning(f"Backtesting Error: {data['backtest_results']['error']}")
+        
+        # Simple trading statistics fallback
         st.subheader("📈 Trading Performance")
         col1, col2, col3, col4 = st.columns(4)
         
-        with col1:
-            st.metric("Total Trades", backtest['total_trades'])
+        if data.get('backtest_results'):
+            backtest = data['backtest_results']
+            
+            with col1:
+                st.metric("Total Trades", backtest.get('total_trades', 0))
+            
+            with col2:
+                win_rate = backtest.get('win_rate', 0)
+                win_rate_color = "green" if win_rate > 50 else "red"
+                st.markdown(
+                    f"<div style='text-align: center; padding: 10px; background-color: {win_rate_color}20; border-radius: 5px;'>"
+                    f"<strong style='color: {win_rate_color};'>{win_rate:.1f}%</strong><br>"
+                    f"<small>Win Rate</small>"
+                    f"</div>", 
+                    unsafe_allow_html=True
+                )
+            
+            with col3:
+                st.metric("Avg Win", f"${backtest.get('avg_win', 0):.2f}")
+            
+            with col4:
+                st.metric("Avg Loss", f"${backtest.get('avg_loss', 0):.2f}")
         
-        with col2:
-            win_rate_color = "green" if backtest['win_rate'] > 50 else "red"
-            st.markdown(
-                f"<div style='text-align: center; padding: 10px; background-color: {win_rate_color}20; border-radius: 5px;'>"
-                f"<strong style='color: {win_rate_color};'>{backtest['win_rate']:.1f}%</strong><br>"
-                f"<small>Win Rate</small>"
-                f"</div>", 
-                unsafe_allow_html=True
-            )
-        
-        with col3:
-            st.metric("Avg Win", f"${backtest['avg_win']:.2f}")
-        
-        with col4:
-            st.metric("Avg Loss", f"${backtest['avg_loss']:.2f}")
-        
-        # Performance chart
-        if backtest['daily_values'] and len(backtest['daily_values']) > 0:
+        # Simple performance chart
+        if data.get('backtest_results', {}).get('daily_values') and len(data['backtest_results']['daily_values']) > 0:
             st.subheader("📊 Portfolio Value Over Time")
             
+            backtest = data['backtest_results']
             portfolio_df = pd.DataFrame({
-                'Date': pd.to_datetime(backtest['dates']) if backtest['dates'] else [],
+                'Date': pd.to_datetime(backtest['dates']) if backtest.get('dates') else [],
                 'Portfolio Value': backtest['daily_values']
             })
             
