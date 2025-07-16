@@ -1,8 +1,8 @@
-# Global Stock Analysis & Trading Dashboard
+# SUDNAXI - Professional AI Trading Intelligence Platform
 
 ## Overview
 
-This is a comprehensive Streamlit-based stock analysis and trading simulation platform that provides real-time stock data visualization, technical analysis, and paper trading capabilities. The application covers global markets including US, Indian, UK, German, Japanese, Chinese, Canadian, Australian, and Brazilian stocks. It features advanced technical indicators, real-time buy/sell signals, and an integrated trading simulator for risk-free practice trading.
+SUDNAXI is a market-ready professional trading intelligence platform featuring advanced machine learning, adaptive AI strategies, and institutional-grade analytics. The platform provides comprehensive stock analysis across global markets with real-time ML adaptation, professional-grade backtesting that generates 1000+ trades, and an integrated help system with detailed tooltips for every trading metric. Built for subscription-worthy professional deployment with continuous learning capabilities.
 
 ## User Preferences
 
@@ -50,20 +50,27 @@ The architecture emphasizes modularity and separation of concerns, with distinct
 - **Risk Assessment**: Signal strength scoring from -5 to +5
 - **Trade Recommendations**: STRONG BUY, BUY, HOLD, SELL, STRONG SELL classifications
 
-### Professional Trading Features
-- **News Sentiment Analysis**: Real-time news sentiment scoring using TextBlob
-  - Analyzes news headlines and summaries for market impact
-  - Provides sentiment scores and market impact assessments
-  - Displays relevance scoring for each news article
-- **Advanced Backtesting Engine**: Comprehensive strategy validation
-  - Historical performance analysis with detailed metrics
-  - Sharpe ratio, maximum drawdown, and volatility calculations
-  - Win/loss ratios and profit factor analysis
-  - Visual portfolio performance tracking with buy/sell signals
-- **Real-Time Updates**: Configurable auto-refresh intervals (5-60 seconds)
-  - Live data updates with timestamp tracking
-  - Real-time signal generation and chart updates
-  - Dynamic portfolio value monitoring
+### Market-Ready Professional Features
+- **Machine Learning Enhanced Backtesting**: Institutional-grade testing engine
+  - Generates 1000+ trades with optimized confidence thresholds (0.1 minimum)
+  - Adaptive ML strategies with real-time learning every 30 minutes
+  - Professional strategy rating system with market-ready scoring (75+ = Excellent)
+  - Comprehensive portfolio performance visualization with trade signals
+- **Educational Intelligence System**: Complete help system for professional deployment
+  - Detailed tooltips for every trading metric and concept
+  - Educational insights generated based on performance analysis
+  - Comprehensive sidebar help with categorized content for all skill levels
+  - Personalized explanations and trading recommendations
+- **Continuous Learning Engine**: Real-time strategy adaptation
+  - Background ML adaptation every 30 minutes based on performance
+  - Strategy enhancement with 2x signal strength multipliers
+  - Aggressive position sizing (up to 35% of capital) for optimal performance
+  - Database integration for persistent trade tracking and analytics
+- **Professional UI/UX**: Subscription-worthy interface design
+  - Institutional-grade styling with gradient designs and professional colors
+  - Enhanced tooltips and hover explanations throughout the platform
+  - Market-ready error handling with graceful fallbacks
+  - Professional loading states and responsive design elements
 
 ### External Integrations
 - **Yahoo Finance API**: Primary data source via `yfinance` library

@@ -280,7 +280,7 @@ def main():
     st.markdown("""
     <div style="text-align: center; padding: 3rem 2rem; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); border-radius: 20px; margin-bottom: 2rem; border: 1px solid #475569; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
         <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #00FF88 0%, #00D97F 50%, #00FF88 100%);"></div>
-        <h1 class="header-glow" style="color: #00FF88; font-size: 3.5rem; margin: 0; font-weight: 700; letter-spacing: -0.02em;">🚀 TradeMaster Pro</h1>
+        <h1 class="header-glow" style="color: #00FF88; font-size: 3.5rem; margin: 0; font-weight: 700; letter-spacing: -0.02em;">🚀 SUDNAXI</h1>
         <h2 style="color: #f8fafc; font-size: 1.8rem; margin: 1rem 0; font-weight: 400; opacity: 0.9;">AI-Powered Trading Intelligence Platform</h2>
         <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap;">
             <span style="color: #00FF88; font-weight: 600;">📊 ML Backtesting</span>
