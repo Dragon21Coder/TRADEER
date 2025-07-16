@@ -144,3 +144,144 @@ class StockDataFetcher:
         except Exception as e:
             print(f"Error calculating financial ratios for {symbol}: {e}")
             return None
+    
+    def calculate_technical_indicators(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Calculate technical indicators for buy/sell signals
+        
+        Args:
+            data: Historical stock data
+            
+        Returns:
+            DataFrame with technical indicators added
+        """
+        try:
+            # Simple Moving Averages
+            data['SMA_20'] = data['Close'].rolling(window=20).mean()
+            data['SMA_50'] = data['Close'].rolling(window=50).mean()
+            data['SMA_200'] = data['Close'].rolling(window=200).mean()
+            
+            # Exponential Moving Averages
+            data['EMA_12'] = data['Close'].ewm(span=12).mean()
+            data['EMA_26'] = data['Close'].ewm(span=26).mean()
+            
+            # MACD
+            data['MACD'] = data['EMA_12'] - data['EMA_26']
+            data['MACD_Signal'] = data['MACD'].ewm(span=9).mean()
+            data['MACD_Histogram'] = data['MACD'] - data['MACD_Signal']
+            
+            # RSI
+            delta = data['Close'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+            rs = gain / loss
+            data['RSI'] = 100 - (100 / (1 + rs))
+            
+            # Bollinger Bands
+            data['BB_Middle'] = data['Close'].rolling(window=20).mean()
+            bb_std = data['Close'].rolling(window=20).std()
+            data['BB_Upper'] = data['BB_Middle'] + (bb_std * 2)
+            data['BB_Lower'] = data['BB_Middle'] - (bb_std * 2)
+            
+            # Volume indicators
+            data['Volume_SMA'] = data['Volume'].rolling(window=20).mean()
+            data['Volume_Ratio'] = data['Volume'] / data['Volume_SMA']
+            
+            return data
+            
+        except Exception as e:
+            print(f"Error calculating technical indicators: {e}")
+            return data
+    
+    def generate_buy_sell_signal(self, data: pd.DataFrame) -> dict:
+        """
+        Generate buy/sell signals based on technical indicators
+        
+        Args:
+            data: Historical stock data with technical indicators
+            
+        Returns:
+            Dictionary with signal information
+        """
+        try:
+            latest = data.iloc[-1]
+            prev = data.iloc[-2] if len(data) > 1 else latest
+            
+            signals = []
+            signal_strength = 0
+            
+            # RSI signals
+            if latest['RSI'] < 30:
+                signals.append("RSI oversold (bullish)")
+                signal_strength += 2
+            elif latest['RSI'] > 70:
+                signals.append("RSI overbought (bearish)")
+                signal_strength -= 2
+            
+            # Moving Average signals
+            if latest['Close'] > latest['SMA_20'] > latest['SMA_50']:
+                signals.append("Price above moving averages (bullish)")
+                signal_strength += 1
+            elif latest['Close'] < latest['SMA_20'] < latest['SMA_50']:
+                signals.append("Price below moving averages (bearish)")
+                signal_strength -= 1
+            
+            # MACD signals
+            if latest['MACD'] > latest['MACD_Signal'] and prev['MACD'] <= prev['MACD_Signal']:
+                signals.append("MACD bullish crossover")
+                signal_strength += 2
+            elif latest['MACD'] < latest['MACD_Signal'] and prev['MACD'] >= prev['MACD_Signal']:
+                signals.append("MACD bearish crossover")
+                signal_strength -= 2
+            
+            # Bollinger Bands signals
+            if latest['Close'] < latest['BB_Lower']:
+                signals.append("Price below lower Bollinger Band (bullish)")
+                signal_strength += 1
+            elif latest['Close'] > latest['BB_Upper']:
+                signals.append("Price above upper Bollinger Band (bearish)")
+                signal_strength -= 1
+            
+            # Volume confirmation
+            if latest['Volume_Ratio'] > 1.5:
+                signals.append("High volume activity")
+                signal_strength += 0.5 if signal_strength > 0 else -0.5
+            
+            # Determine overall signal
+            if signal_strength >= 3:
+                overall_signal = "STRONG BUY"
+                signal_color = "green"
+            elif signal_strength >= 1:
+                overall_signal = "BUY"
+                signal_color = "lightgreen"
+            elif signal_strength <= -3:
+                overall_signal = "STRONG SELL"
+                signal_color = "red"
+            elif signal_strength <= -1:
+                overall_signal = "SELL"
+                signal_color = "orange"
+            else:
+                overall_signal = "HOLD"
+                signal_color = "yellow"
+            
+            return {
+                'signal': overall_signal,
+                'strength': signal_strength,
+                'color': signal_color,
+                'reasons': signals,
+                'rsi': latest['RSI'],
+                'macd': latest['MACD'],
+                'price_vs_sma20': ((latest['Close'] - latest['SMA_20']) / latest['SMA_20']) * 100
+            }
+            
+        except Exception as e:
+            print(f"Error generating buy/sell signal: {e}")
+            return {
+                'signal': 'UNKNOWN',
+                'strength': 0,
+                'color': 'gray',
+                'reasons': ['Error calculating signals'],
+                'rsi': None,
+                'macd': None,
+                'price_vs_sma20': None
+            }

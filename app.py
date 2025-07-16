@@ -28,13 +28,49 @@ def main():
     with st.sidebar:
         st.header("Stock Selection")
         
-        # Stock symbol input
-        stock_symbol = st.text_input(
-            "Enter Stock Symbol",
-            value="AAPL",
-            placeholder="e.g., AAPL, GOOGL, TSLA",
-            help="Enter a valid stock ticker symbol"
+        # Popular stock symbols with reliable data
+        popular_stocks = {
+            "Apple Inc. (AAPL)": "AAPL",
+            "Microsoft Corp. (MSFT)": "MSFT", 
+            "Amazon.com Inc. (AMZN)": "AMZN",
+            "Tesla Inc. (TSLA)": "TSLA",
+            "Alphabet Inc. (GOOGL)": "GOOGL",
+            "Meta Platforms (META)": "META",
+            "NVIDIA Corp. (NVDA)": "NVDA",
+            "Netflix Inc. (NFLX)": "NFLX",
+            "Berkshire Hathaway (BRK-B)": "BRK-B",
+            "Johnson & Johnson (JNJ)": "JNJ",
+            "JPMorgan Chase (JPM)": "JPM",
+            "Visa Inc. (V)": "V",
+            "Procter & Gamble (PG)": "PG",
+            "UnitedHealth Group (UNH)": "UNH",
+            "Home Depot (HD)": "HD",
+            "Mastercard Inc. (MA)": "MA",
+            "Disney (DIS)": "DIS",
+            "Adobe Inc. (ADBE)": "ADBE",
+            "Salesforce (CRM)": "CRM",
+            "Coca-Cola (KO)": "KO"
+        }
+        
+        # Stock selection dropdown
+        selected_stock_display = st.selectbox(
+            "Select a Stock",
+            options=list(popular_stocks.keys()),
+            index=0,
+            help="Choose from popular, reliable stock symbols"
+        )
+        stock_symbol = popular_stocks[selected_stock_display]
+        
+        # Manual input option
+        st.subheader("Or Enter Custom Symbol")
+        custom_symbol = st.text_input(
+            "Custom Stock Symbol",
+            placeholder="e.g., AAPL, MSFT",
+            help="Enter any valid stock ticker symbol"
         ).upper()
+        
+        if custom_symbol:
+            stock_symbol = custom_symbol
         
         # Time period selection
         time_periods = {
@@ -54,7 +90,7 @@ def main():
         )
         
         # Chart type selection
-        chart_types = ["Candlestick", "Line", "OHLC"]
+        chart_types = ["Candlestick", "Line", "OHLC", "Bollinger Bands", "MACD Analysis"]
         chart_type = st.selectbox("Chart Type", chart_types)
         
         # Fetch data button
@@ -76,11 +112,18 @@ def main():
                     )
                     
                     if stock_info and historical_data is not None and not historical_data.empty:
+                        # Calculate technical indicators
+                        historical_data_with_indicators = fetcher.calculate_technical_indicators(historical_data.copy())
+                        
+                        # Generate buy/sell signals
+                        trading_signal = fetcher.generate_buy_sell_signal(historical_data_with_indicators)
+                        
                         st.session_state.stock_data = {
                             'info': stock_info,
-                            'historical': historical_data,
+                            'historical': historical_data_with_indicators,
                             'symbol': stock_symbol,
-                            'period': selected_period
+                            'period': selected_period,
+                            'trading_signal': trading_signal
                         }
                         st.session_state.current_symbol = stock_symbol
                         st.success(f"Successfully loaded data for {stock_symbol}")
@@ -130,6 +173,46 @@ def display_stock_analysis(chart_type):
     historical_data = data['historical']
     symbol = data['symbol']
     
+    # Trading Signal Section (prominently displayed)
+    trading_signal = data.get('trading_signal', {})
+    signal_color_map = {
+        'green': '#00FF88',
+        'lightgreen': '#90EE90', 
+        'yellow': '#FFD700',
+        'orange': '#FFA500',
+        'red': '#FF4444',
+        'gray': '#888888'
+    }
+    
+    st.markdown("---")
+    col_signal, col_strength = st.columns([2, 1])
+    
+    with col_signal:
+        signal_color = signal_color_map.get(trading_signal.get('color', 'gray'), '#888888')
+        st.markdown(
+            f"<div style='padding: 20px; background-color: {signal_color}20; border-left: 5px solid {signal_color}; border-radius: 5px;'>"
+            f"<h2 style='color: {signal_color}; margin: 0;'>🚨 TRADING SIGNAL: {trading_signal.get('signal', 'UNKNOWN')}</h2>"
+            f"<p style='margin: 5px 0; color: #FAFAFA;'>Signal Strength: {trading_signal.get('strength', 0):.1f}</p>"
+            f"</div>", 
+            unsafe_allow_html=True
+        )
+    
+    with col_strength:
+        if trading_signal.get('rsi') is not None:
+            st.metric(
+                label="RSI", 
+                value=f"{trading_signal['rsi']:.1f}",
+                help="RSI below 30 = oversold, above 70 = overbought"
+            )
+    
+    # Signal reasons
+    if trading_signal.get('reasons'):
+        st.subheader("📋 Signal Analysis")
+        for reason in trading_signal['reasons']:
+            st.write(f"• {reason}")
+    
+    st.markdown("---")
+    
     # Header with basic info
     col1, col2, col3, col4 = st.columns(4)
     
@@ -168,8 +251,12 @@ def display_stock_analysis(chart_type):
         fig = chart_generator.create_candlestick_chart(historical_data, symbol)
     elif chart_type == "Line":
         fig = chart_generator.create_line_chart(historical_data, symbol)
-    else:  # OHLC
+    elif chart_type == "OHLC":
         fig = chart_generator.create_ohlc_chart(historical_data, symbol)
+    elif chart_type == "Bollinger Bands":
+        fig = chart_generator.create_bollinger_bands_chart(historical_data, symbol)
+    else:  # MACD Analysis
+        fig = chart_generator.create_macd_chart(historical_data, symbol)
     
     st.plotly_chart(fig, use_container_width=True)
     
@@ -239,20 +326,50 @@ def display_stock_analysis(chart_type):
     # Technical indicators section
     st.subheader("📈 Technical Analysis")
     
-    # Calculate simple moving averages
-    historical_data['SMA_20'] = historical_data['Close'].rolling(window=20).mean()
-    historical_data['SMA_50'] = historical_data['Close'].rolling(window=50).mean()
-    
-    # Calculate RSI
-    delta = historical_data['Close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-    rs = gain / loss
-    historical_data['RSI'] = 100 - (100 / (1 + rs))
-    
-    # Technical indicators chart
+    # Technical indicators chart (data already has indicators calculated)
     tech_fig = chart_generator.create_technical_chart(historical_data, symbol)
     st.plotly_chart(tech_fig, use_container_width=True)
+    
+    # Additional technical metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    latest_data = historical_data.iloc[-1]
+    
+    with col1:
+        if 'MACD' in historical_data.columns:
+            st.metric(
+                label="MACD",
+                value=f"{latest_data['MACD']:.3f}",
+                delta=f"Signal: {latest_data['MACD_Signal']:.3f}",
+                help="MACD above signal line = bullish momentum"
+            )
+    
+    with col2:
+        if 'BB_Upper' in historical_data.columns:
+            bb_position = ((latest_data['Close'] - latest_data['BB_Lower']) / 
+                          (latest_data['BB_Upper'] - latest_data['BB_Lower'])) * 100
+            st.metric(
+                label="Bollinger Band %",
+                value=f"{bb_position:.1f}%",
+                help="Position within Bollinger Bands (0-100%)"
+            )
+    
+    with col3:
+        if 'Volume_Ratio' in historical_data.columns:
+            st.metric(
+                label="Volume Ratio",
+                value=f"{latest_data['Volume_Ratio']:.2f}",
+                help="Current volume vs 20-day average"
+            )
+    
+    with col4:
+        if 'SMA_20' in historical_data.columns:
+            price_vs_sma = ((latest_data['Close'] - latest_data['SMA_20']) / latest_data['SMA_20']) * 100
+            st.metric(
+                label="Price vs SMA20",
+                value=f"{price_vs_sma:.2f}%",
+                help="Price position relative to 20-day moving average"
+            )
 
 def format_large_number(num):
     """Format large numbers with appropriate suffixes"""

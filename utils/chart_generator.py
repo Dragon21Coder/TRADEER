@@ -349,3 +349,193 @@ class ChartGenerator:
         fig.update_layout(layout)
         
         return fig
+    
+    def create_bollinger_bands_chart(self, data: pd.DataFrame, symbol: str) -> go.Figure:
+        """
+        Create a Bollinger Bands chart
+        
+        Args:
+            data: Historical stock data with Bollinger Bands
+            symbol: Stock symbol for title
+            
+        Returns:
+            Plotly figure object
+        """
+        fig = go.Figure()
+        
+        # Bollinger Bands
+        if 'BB_Upper' in data.columns and 'BB_Lower' in data.columns:
+            # Upper band
+            fig.add_trace(
+                go.Scatter(
+                    x=data.index,
+                    y=data['BB_Upper'],
+                    mode='lines',
+                    name='Upper Band',
+                    line=dict(color='red', width=1),
+                    fill=None
+                )
+            )
+            
+            # Lower band
+            fig.add_trace(
+                go.Scatter(
+                    x=data.index,
+                    y=data['BB_Lower'],
+                    mode='lines',
+                    name='Lower Band',
+                    line=dict(color='red', width=1),
+                    fill='tonexty',
+                    fillcolor='rgba(255, 0, 0, 0.1)'
+                )
+            )
+            
+            # Middle band (SMA)
+            fig.add_trace(
+                go.Scatter(
+                    x=data.index,
+                    y=data['BB_Middle'],
+                    mode='lines',
+                    name='Middle Band (SMA)',
+                    line=dict(color='blue', width=1)
+                )
+            )
+        
+        # Price line
+        fig.add_trace(
+            go.Scatter(
+                x=data.index,
+                y=data['Close'],
+                mode='lines',
+                name='Close Price',
+                line=dict(color=self.colors['up'], width=2)
+            )
+        )
+        
+        # Update layout
+        layout = self._get_base_layout(f'{symbol} Bollinger Bands Analysis')
+        layout.update({
+            'yaxis': {
+                'title': 'Price ($)',
+                'gridcolor': self.colors['grid']
+            },
+            'xaxis': {
+                'title': 'Date',
+                'gridcolor': self.colors['grid']
+            },
+            'height': 500
+        })
+        
+        fig.update_layout(layout)
+        
+        return fig
+    
+    def create_macd_chart(self, data: pd.DataFrame, symbol: str) -> go.Figure:
+        """
+        Create a MACD analysis chart
+        
+        Args:
+            data: Historical stock data with MACD indicators
+            symbol: Stock symbol for title
+            
+        Returns:
+            Plotly figure object
+        """
+        fig = make_subplots(
+            rows=2, cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.1,
+            subplot_titles=('Price with EMAs', 'MACD'),
+            row_heights=[0.7, 0.3]
+        )
+        
+        # Price line
+        fig.add_trace(
+            go.Scatter(
+                x=data.index,
+                y=data['Close'],
+                mode='lines',
+                name='Close Price',
+                line=dict(color=self.colors['text'], width=2)
+            ),
+            row=1, col=1
+        )
+        
+        # EMAs
+        if 'EMA_12' in data.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=data.index,
+                    y=data['EMA_12'],
+                    mode='lines',
+                    name='EMA 12',
+                    line=dict(color=self.colors['sma20'], width=1)
+                ),
+                row=1, col=1
+            )
+        
+        if 'EMA_26' in data.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=data.index,
+                    y=data['EMA_26'],
+                    mode='lines',
+                    name='EMA 26',
+                    line=dict(color=self.colors['sma50'], width=1)
+                ),
+                row=1, col=1
+            )
+        
+        # MACD line
+        if 'MACD' in data.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=data.index,
+                    y=data['MACD'],
+                    mode='lines',
+                    name='MACD',
+                    line=dict(color=self.colors['rsi'], width=2)
+                ),
+                row=2, col=1
+            )
+        
+        # Signal line
+        if 'MACD_Signal' in data.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=data.index,
+                    y=data['MACD_Signal'],
+                    mode='lines',
+                    name='Signal',
+                    line=dict(color='orange', width=1)
+                ),
+                row=2, col=1
+            )
+        
+        # MACD Histogram
+        if 'MACD_Histogram' in data.columns:
+            colors = [self.colors['up'] if val >= 0 else self.colors['down'] 
+                     for val in data['MACD_Histogram']]
+            fig.add_trace(
+                go.Bar(
+                    x=data.index,
+                    y=data['MACD_Histogram'],
+                    name='Histogram',
+                    marker_color=colors,
+                    opacity=0.6
+                ),
+                row=2, col=1
+            )
+        
+        # Update layout
+        layout = self._get_base_layout(f'{symbol} MACD Analysis')
+        layout.update({
+            'height': 700,
+            'yaxis': {'title': 'Price ($)', 'gridcolor': self.colors['grid']},
+            'yaxis2': {'title': 'MACD', 'gridcolor': self.colors['grid']},
+            'xaxis2': {'title': 'Date', 'gridcolor': self.colors['grid']}
+        })
+        
+        fig.update_layout(layout)
+        
+        return fig
