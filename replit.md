@@ -1,8 +1,8 @@
-# Stock Analysis Dashboard
+# Global Stock Analysis & Trading Dashboard
 
 ## Overview
 
-This is a Streamlit-based stock analysis dashboard that provides real-time stock data visualization and analysis. The application fetches stock data from Yahoo Finance and presents it through interactive charts and metrics. The system is built with a modular architecture focusing on data fetching, chart generation, and web-based presentation.
+This is a comprehensive Streamlit-based stock analysis and trading simulation platform that provides real-time stock data visualization, technical analysis, and paper trading capabilities. The application covers global markets including US, Indian, UK, German, Japanese, Chinese, Canadian, Australian, and Brazilian stocks. It features advanced technical indicators, real-time buy/sell signals, and an integrated trading simulator for risk-free practice trading.
 
 ## User Preferences
 
@@ -21,20 +21,34 @@ The architecture emphasizes modularity and separation of concerns, with distinct
 ## Key Components
 
 ### Frontend (Streamlit App)
-- **Technology**: Streamlit framework for rapid web app development
-- **Features**: Interactive sidebar for stock selection, time period filtering, and real-time data display
-- **Configuration**: Wide layout with expanded sidebar for optimal user experience
-- **State Management**: Session state management for stock data and current symbol caching
+- **Technology**: Streamlit framework with dark theme configuration
+- **Global Market Coverage**: Organized by regions (US, India, UK, Germany, Japan, China, Canada, Australia, Brazil)
+- **Real-Time Features**: Auto-refresh functionality for live data updates
+- **Trading Simulator**: Paper trading with $1000 starting balance for risk-free practice
+- **Interactive Charts**: Multiple chart types with trading signal overlays
+- **Portfolio Management**: Real-time portfolio tracking with P&L calculations
 
-### Data Management
-- **StockDataFetcher**: Handles all Yahoo Finance API interactions
-  - Fetches comprehensive stock information and historical data
-  - Implements basic caching to reduce API calls
-  - Provides error handling and data validation
-- **ChartGenerator**: Creates interactive visualizations using Plotly
-  - Implements dark theme color scheme for professional appearance
-  - Provides reusable chart components with consistent styling
-  - Supports multiple chart types for comprehensive analysis
+### Advanced Analytics Engine
+- **StockDataFetcher**: Enhanced Yahoo Finance integration with global market support
+  - Technical indicators calculation (RSI, MACD, Bollinger Bands, Moving Averages)
+  - Real-time buy/sell signal generation based on multiple technical factors
+  - Signal strength scoring system for trade confidence
+  - Volume analysis and trend confirmation
+- **ChartGenerator**: Professional-grade visualization suite
+  - Signal annotations directly on charts
+  - Multiple chart types: Candlestick, Line, OHLC, Bollinger Bands, MACD Analysis
+  - Dark theme optimized for extended trading sessions
+  - Interactive features with hover details and zoom capabilities
+
+### Trading Intelligence System
+- **Signal Generation**: Multi-factor analysis combining:
+  - RSI oversold/overbought conditions
+  - Moving average crossovers and trend analysis
+  - MACD momentum indicators and crossover signals
+  - Bollinger Band squeeze and breakout patterns
+  - Volume confirmation for signal reliability
+- **Risk Assessment**: Signal strength scoring from -5 to +5
+- **Trade Recommendations**: STRONG BUY, BUY, HOLD, SELL, STRONG SELL classifications
 
 ### External Integrations
 - **Yahoo Finance API**: Primary data source via `yfinance` library

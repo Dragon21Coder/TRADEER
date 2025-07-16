@@ -51,7 +51,7 @@ class ChartGenerator:
             }
         }
     
-    def create_candlestick_chart(self, data: pd.DataFrame, symbol: str) -> go.Figure:
+    def create_candlestick_chart(self, data: pd.DataFrame, symbol: str, trading_signal: dict = None) -> go.Figure:
         """
         Create an interactive candlestick chart
         
@@ -107,6 +107,26 @@ class ChartGenerator:
             'yaxis2': {'gridcolor': self.colors['grid']},
             'height': 700
         })
+        
+        # Add trading signal annotations
+        if trading_signal and 'signal' in trading_signal:
+            signal_color = '#00FF88' if 'BUY' in trading_signal['signal'] else '#FF4444' if 'SELL' in trading_signal['signal'] else '#FFD700'
+            
+            fig.add_annotation(
+                x=data.index[-1],
+                y=data['High'].iloc[-1],
+                text=f"📊 {trading_signal['signal']}",
+                showarrow=True,
+                arrowhead=2,
+                arrowsize=1,
+                arrowwidth=2,
+                arrowcolor=signal_color,
+                bgcolor=signal_color,
+                bordercolor=signal_color,
+                font=dict(color='white', size=12),
+                xref="x",
+                yref="y"
+            )
         
         fig.update_layout(layout)
         fig.update_xaxes(rangeslider_visible=False)

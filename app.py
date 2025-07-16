@@ -21,36 +21,128 @@ if 'current_symbol' not in st.session_state:
     st.session_state.current_symbol = ""
 
 def main():
-    st.title("📈 Stock Analysis Dashboard")
-    st.markdown("Analyze stock performance with real-time data from Yahoo Finance")
+    st.title("📈 Global Stock Analysis & Trading Dashboard")
+    st.markdown("Analyze stock performance with real-time data from Yahoo Finance across global markets")
+    
+    # Important disclaimer
+    with st.expander("⚠️ Important Disclaimer - READ BEFORE USING", expanded=False):
+        st.warning("""
+        **EDUCATIONAL PURPOSE ONLY - NOT INVESTMENT ADVICE**
+        
+        This application is designed for educational purposes and trading simulation only. Please note:
+        
+        🚨 **Trading Simulation Only**: This app provides a paper trading simulator, not real trading capabilities
+        
+        📊 **No Real Money**: All trades are simulated with virtual money for learning purposes
+        
+        ⚡ **Data Limitations**: Yahoo Finance free API has limitations - real trading requires premium data feeds
+        
+        🎯 **Educational Tool**: Use this to learn technical analysis and practice trading strategies risk-free
+        
+        💼 **Investment Advice**: This is NOT professional investment advice. Always consult qualified financial advisors
+        
+        🔒 **Risk Warning**: Real trading involves significant financial risk. Never invest more than you can afford to lose
+        
+        **For Real Trading**: Use licensed brokers with proper risk management, real-time data, and professional tools
+        """)
+    
+    st.markdown("---")
     
     # Sidebar for inputs
     with st.sidebar:
         st.header("Stock Selection")
         
-        # Popular stock symbols with reliable data
-        popular_stocks = {
-            "Apple Inc. (AAPL)": "AAPL",
-            "Microsoft Corp. (MSFT)": "MSFT", 
-            "Amazon.com Inc. (AMZN)": "AMZN",
-            "Tesla Inc. (TSLA)": "TSLA",
-            "Alphabet Inc. (GOOGL)": "GOOGL",
-            "Meta Platforms (META)": "META",
-            "NVIDIA Corp. (NVDA)": "NVDA",
-            "Netflix Inc. (NFLX)": "NFLX",
-            "Berkshire Hathaway (BRK-B)": "BRK-B",
-            "Johnson & Johnson (JNJ)": "JNJ",
-            "JPMorgan Chase (JPM)": "JPM",
-            "Visa Inc. (V)": "V",
-            "Procter & Gamble (PG)": "PG",
-            "UnitedHealth Group (UNH)": "UNH",
-            "Home Depot (HD)": "HD",
-            "Mastercard Inc. (MA)": "MA",
-            "Disney (DIS)": "DIS",
-            "Adobe Inc. (ADBE)": "ADBE",
-            "Salesforce (CRM)": "CRM",
-            "Coca-Cola (KO)": "KO"
+        # Global stock symbols organized by region
+        stock_regions = {
+            "🇺🇸 US Stocks": {
+                "Apple Inc. (AAPL)": "AAPL",
+                "Microsoft Corp. (MSFT)": "MSFT", 
+                "Amazon.com Inc. (AMZN)": "AMZN",
+                "Tesla Inc. (TSLA)": "TSLA",
+                "Alphabet Inc. (GOOGL)": "GOOGL",
+                "Meta Platforms (META)": "META",
+                "NVIDIA Corp. (NVDA)": "NVDA",
+                "Netflix Inc. (NFLX)": "NFLX",
+                "Berkshire Hathaway (BRK-B)": "BRK-B",
+                "Johnson & Johnson (JNJ)": "JNJ",
+                "JPMorgan Chase (JPM)": "JPM",
+                "Visa Inc. (V)": "V"
+            },
+            "🇮🇳 Indian Stocks": {
+                "Reliance Industries (RELIANCE.NS)": "RELIANCE.NS",
+                "Tata Consultancy Services (TCS.NS)": "TCS.NS",
+                "HDFC Bank (HDFCBANK.NS)": "HDFCBANK.NS",
+                "Infosys (INFY.NS)": "INFY.NS",
+                "ICICI Bank (ICICIBANK.NS)": "ICICIBANK.NS",
+                "State Bank of India (SBIN.NS)": "SBIN.NS",
+                "Bharti Airtel (BHARTIARTL.NS)": "BHARTIARTL.NS",
+                "ITC Ltd (ITC.NS)": "ITC.NS",
+                "Hindustan Unilever (HINDUNILVR.NS)": "HINDUNILVR.NS",
+                "Larsen & Toubro (LT.NS)": "LT.NS"
+            },
+            "🇬🇧 UK Stocks": {
+                "Royal Dutch Shell (SHEL.L)": "SHEL.L",
+                "AstraZeneca (AZN.L)": "AZN.L",
+                "British Petroleum (BP.L)": "BP.L",
+                "HSBC Holdings (HSBA.L)": "HSBA.L",
+                "Vodafone Group (VOD.L)": "VOD.L",
+                "Rio Tinto (RIO.L)": "RIO.L",
+                "Unilever (ULVR.L)": "ULVR.L",
+                "BT Group (BT-A.L)": "BT-A.L"
+            },
+            "🇩🇪 German Stocks": {
+                "SAP SE (SAP.DE)": "SAP.DE",
+                "Siemens AG (SIE.DE)": "SIE.DE",
+                "ASML Holding (ASML.AS)": "ASML.AS",
+                "Allianz SE (ALV.DE)": "ALV.DE",
+                "Deutsche Bank (DBK.DE)": "DBK.DE",
+                "BMW AG (BMW.DE)": "BMW.DE",
+                "Volkswagen (VOW3.DE)": "VOW3.DE"
+            },
+            "🇯🇵 Japanese Stocks": {
+                "Toyota Motor (7203.T)": "7203.T",
+                "Sony Group (6758.T)": "6758.T",
+                "SoftBank Group (9984.T)": "9984.T",
+                "Nintendo (7974.T)": "7974.T",
+                "Honda Motor (7267.T)": "7267.T",
+                "Mitsubishi UFJ (8306.T)": "8306.T"
+            },
+            "🇨🇳 Chinese Stocks": {
+                "Alibaba Group (BABA)": "BABA",
+                "Tencent Holdings (0700.HK)": "0700.HK",
+                "Taiwan Semiconductor (TSM)": "TSM",
+                "JD.com (JD)": "JD",
+                "Baidu Inc (BIDU)": "BIDU",
+                "NetEase Inc (NTES)": "NTES"
+            },
+            "🇨🇦 Canadian Stocks": {
+                "Shopify Inc (SHOP.TO)": "SHOP.TO",
+                "Royal Bank of Canada (RY.TO)": "RY.TO",
+                "Canadian National Railway (CNR.TO)": "CNR.TO",
+                "Brookfield Asset Management (BAM.TO)": "BAM.TO"
+            },
+            "🇦🇺 Australian Stocks": {
+                "BHP Group (BHP.AX)": "BHP.AX",
+                "Commonwealth Bank (CBA.AX)": "CBA.AX",
+                "CSL Limited (CSL.AX)": "CSL.AX",
+                "Westpac Banking (WBC.AX)": "WBC.AX"
+            },
+            "🇧🇷 Brazilian Stocks": {
+                "Petrobras (PETR4.SA)": "PETR4.SA",
+                "Vale SA (VALE3.SA)": "VALE3.SA",
+                "Itau Unibanco (ITUB4.SA)": "ITUB4.SA",
+                "Banco do Brasil (BBAS3.SA)": "BBAS3.SA"
+            }
         }
+        
+        # Region selection
+        selected_region = st.selectbox(
+            "Select Market Region",
+            options=list(stock_regions.keys()),
+            index=0
+        )
+        
+        popular_stocks = stock_regions[selected_region]
         
         # Stock selection dropdown
         selected_stock_display = st.selectbox(
@@ -93,8 +185,39 @@ def main():
         chart_types = ["Candlestick", "Line", "OHLC", "Bollinger Bands", "MACD Analysis"]
         chart_type = st.selectbox("Chart Type", chart_types)
         
+        # Auto-refresh toggle
+        st.subheader("Real-Time Options")
+        auto_refresh = st.checkbox("Auto-refresh every 30 seconds", value=False)
+        
+        # Trading simulator toggle
+        trading_mode = st.checkbox("Enable Trading Simulator", value=False)
+        
+        if trading_mode:
+            st.subheader("💰 Trading Simulator")
+            if 'portfolio_balance' not in st.session_state:
+                st.session_state.portfolio_balance = 1000.0  # Starting with $1000
+            if 'portfolio_holdings' not in st.session_state:
+                st.session_state.portfolio_holdings = {}
+            
+            st.metric("Portfolio Balance", f"${st.session_state.portfolio_balance:.2f}")
+            
+            # Investment amount
+            investment_amount = st.number_input(
+                "Investment Amount ($)", 
+                min_value=1.0, 
+                max_value=float(st.session_state.portfolio_balance),
+                value=min(100.0, st.session_state.portfolio_balance),
+                step=1.0
+            )
+        
         # Fetch data button
         fetch_button = st.button("Fetch Stock Data", type="primary")
+        
+        # Auto-refresh logic
+        if auto_refresh:
+            import time
+            time.sleep(1)  # Small delay to prevent too frequent updates
+            st.rerun()
     
     # Main content area
     if fetch_button or (stock_symbol and stock_symbol != st.session_state.current_symbol):
@@ -211,6 +334,61 @@ def display_stock_analysis(chart_type):
         for reason in trading_signal['reasons']:
             st.write(f"• {reason}")
     
+    # Trading simulator actions
+    if 'trading_mode' in locals() and trading_mode and trading_signal.get('signal') != 'UNKNOWN':
+        col_buy, col_sell = st.columns(2)
+        
+        current_price = stock_info.get('currentPrice', 0)
+        symbol = data['symbol']
+        
+        with col_buy:
+            if st.button(f"🟢 BUY {symbol}", type="primary"):
+                if investment_amount <= st.session_state.portfolio_balance:
+                    shares = investment_amount / current_price
+                    
+                    if symbol in st.session_state.portfolio_holdings:
+                        st.session_state.portfolio_holdings[symbol]['shares'] += shares
+                        st.session_state.portfolio_holdings[symbol]['avg_price'] = (
+                            (st.session_state.portfolio_holdings[symbol]['avg_price'] * 
+                             (st.session_state.portfolio_holdings[symbol]['shares'] - shares) + 
+                             current_price * shares) / st.session_state.portfolio_holdings[symbol]['shares']
+                        )
+                    else:
+                        st.session_state.portfolio_holdings[symbol] = {
+                            'shares': shares,
+                            'avg_price': current_price
+                        }
+                    
+                    st.session_state.portfolio_balance -= investment_amount
+                    st.success(f"Bought {shares:.4f} shares of {symbol} at ${current_price:.2f}")
+                    st.rerun()
+                else:
+                    st.error("Insufficient balance!")
+        
+        with col_sell:
+            if symbol in st.session_state.portfolio_holdings and st.session_state.portfolio_holdings[symbol]['shares'] > 0:
+                if st.button(f"🔴 SELL {symbol}", type="secondary"):
+                    shares_to_sell = min(
+                        investment_amount / current_price,
+                        st.session_state.portfolio_holdings[symbol]['shares']
+                    )
+                    
+                    proceeds = shares_to_sell * current_price
+                    st.session_state.portfolio_balance += proceeds
+                    st.session_state.portfolio_holdings[symbol]['shares'] -= shares_to_sell
+                    
+                    profit_loss = (current_price - st.session_state.portfolio_holdings[symbol]['avg_price']) * shares_to_sell
+                    
+                    if st.session_state.portfolio_holdings[symbol]['shares'] <= 0:
+                        del st.session_state.portfolio_holdings[symbol]
+                    
+                    st.success(f"Sold {shares_to_sell:.4f} shares of {symbol} at ${current_price:.2f}")
+                    if profit_loss > 0:
+                        st.success(f"Profit: ${profit_loss:.2f}")
+                    else:
+                        st.error(f"Loss: ${abs(profit_loss):.2f}")
+                    st.rerun()
+    
     st.markdown("---")
     
     # Header with basic info
@@ -248,7 +426,7 @@ def display_stock_analysis(chart_type):
     chart_generator = ChartGenerator()
     
     if chart_type == "Candlestick":
-        fig = chart_generator.create_candlestick_chart(historical_data, symbol)
+        fig = chart_generator.create_candlestick_chart(historical_data, symbol, trading_signal)
     elif chart_type == "Line":
         fig = chart_generator.create_line_chart(historical_data, symbol)
     elif chart_type == "OHLC":
@@ -370,6 +548,46 @@ def display_stock_analysis(chart_type):
                 value=f"{price_vs_sma:.2f}%",
                 help="Price position relative to 20-day moving average"
             )
+    
+    # Portfolio Display Section
+    if 'portfolio_holdings' in st.session_state and st.session_state.portfolio_holdings:
+        st.subheader("📊 Portfolio Holdings")
+        
+        portfolio_data = []
+        total_portfolio_value = st.session_state.portfolio_balance
+        
+        for symbol, holding in st.session_state.portfolio_holdings.items():
+            if holding['shares'] > 0:
+                # Get current price (simplified - using last known price)
+                current_price = stock_info.get('currentPrice', holding['avg_price']) if data['symbol'] == symbol else holding['avg_price']
+                current_value = holding['shares'] * current_price
+                profit_loss = (current_price - holding['avg_price']) * holding['shares']
+                profit_loss_pct = ((current_price - holding['avg_price']) / holding['avg_price']) * 100
+                
+                portfolio_data.append({
+                    'Symbol': symbol,
+                    'Shares': f"{holding['shares']:.4f}",
+                    'Avg Price': f"${holding['avg_price']:.2f}",
+                    'Current Price': f"${current_price:.2f}",
+                    'Current Value': f"${current_value:.2f}",
+                    'P&L': f"${profit_loss:.2f}",
+                    'P&L %': f"{profit_loss_pct:.2f}%"
+                })
+                
+                total_portfolio_value += current_value
+        
+        if portfolio_data:
+            portfolio_df = pd.DataFrame(portfolio_data)
+            st.dataframe(portfolio_df, use_container_width=True)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Cash Balance", f"${st.session_state.portfolio_balance:.2f}")
+            with col2:
+                st.metric("Total Portfolio Value", f"${total_portfolio_value:.2f}")
+            with col3:
+                total_return = total_portfolio_value - 1000.0  # Starting amount was $1000
+                st.metric("Total Return", f"${total_return:.2f}", f"{(total_return/1000.0)*100:.2f}%")
 
 def format_large_number(num):
     """Format large numbers with appropriate suffixes"""
