@@ -133,7 +133,7 @@ class ChartGenerator:
         
         return fig
     
-    def create_line_chart(self, data: pd.DataFrame, symbol: str) -> go.Figure:
+    def create_line_chart(self, data: pd.DataFrame, symbol: str, trading_signal: dict = None) -> go.Figure:
         """
         Create an interactive line chart
         
@@ -159,6 +159,26 @@ class ChartGenerator:
                              '<extra></extra>'
             )
         )
+        
+        # Add trading signal annotations for line chart
+        if trading_signal and 'signal' in trading_signal:
+            signal_color = '#00FF88' if 'BUY' in trading_signal['signal'] else '#FF4444' if 'SELL' in trading_signal['signal'] else '#FFD700'
+            
+            fig.add_annotation(
+                x=data.index[-1],
+                y=data['Close'].iloc[-1],
+                text=f"📊 {trading_signal['signal']}",
+                showarrow=True,
+                arrowhead=2,
+                arrowsize=1,
+                arrowwidth=2,
+                arrowcolor=signal_color,
+                bgcolor=signal_color,
+                bordercolor=signal_color,
+                font=dict(color='white', size=12),
+                xref="x",
+                yref="y"
+            )
         
         # Update layout
         layout = self._get_base_layout(f'{symbol} Stock Price - Line Chart')

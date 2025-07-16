@@ -3,8 +3,11 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import io
+import time
 from utils.data_fetcher import StockDataFetcher
 from utils.chart_generator import ChartGenerator
+from utils.news_sentiment import NewsSentimentAnalyzer
+from utils.backtesting_engine import BacktestingEngine
 
 # Configure page
 st.set_page_config(
@@ -185,9 +188,11 @@ def main():
         chart_types = ["Candlestick", "Line", "OHLC", "Bollinger Bands", "MACD Analysis"]
         chart_type = st.selectbox("Chart Type", chart_types)
         
-        # Auto-refresh toggle
-        st.subheader("Real-Time Options")
-        auto_refresh = st.checkbox("Auto-refresh every 30 seconds", value=False)
+        # Real-time options
+        st.subheader("📡 Real-Time Features")
+        auto_refresh = st.checkbox("🔄 Auto-refresh every 15 seconds", value=False)
+        show_news = st.checkbox("📰 Show News Sentiment", value=True)
+        show_backtest = st.checkbox("📊 Show Backtesting Results", value=True)
         
         # Trading simulator toggle
         trading_mode = st.checkbox("Enable Trading Simulator", value=False)
@@ -213,11 +218,14 @@ def main():
         # Fetch data button
         fetch_button = st.button("Fetch Stock Data", type="primary")
         
-        # Auto-refresh logic
+        # Real-time refresh interval selector
         if auto_refresh:
-            import time
-            time.sleep(1)  # Small delay to prevent too frequent updates
-            st.rerun()
+            refresh_interval = st.selectbox(
+                "Refresh Interval",
+                options=[5, 10, 15, 30, 60],
+                index=2,
+                format_func=lambda x: f"{x} seconds"
+            )
     
     # Main content area
     if fetch_button or (stock_symbol and stock_symbol != st.session_state.current_symbol):
@@ -241,15 +249,39 @@ def main():
                         # Generate buy/sell signals
                         trading_signal = fetcher.generate_buy_sell_signal(historical_data_with_indicators)
                         
+                        # Fetch news sentiment if enabled
+                        news_data = None
+                        sentiment_summary = None
+                        if show_news:
+                            try:
+                                news_analyzer = NewsSentimentAnalyzer()
+                                news_data = news_analyzer.get_stock_news(stock_symbol, limit=10)
+                                sentiment_summary = news_analyzer.get_overall_sentiment(news_data)
+                            except Exception as e:
+                                st.warning(f"Could not fetch news data: {e}")
+                        
+                        # Run backtesting if enabled
+                        backtest_results = None
+                        if show_backtest:
+                            try:
+                                backtesting_engine = BacktestingEngine()
+                                backtest_results = backtesting_engine.run_backtest(stock_symbol, "1y", 10000)
+                            except Exception as e:
+                                st.warning(f"Could not run backtesting: {e}")
+                        
                         st.session_state.stock_data = {
                             'info': stock_info,
                             'historical': historical_data_with_indicators,
                             'symbol': stock_symbol,
                             'period': selected_period,
-                            'trading_signal': trading_signal
+                            'trading_signal': trading_signal,
+                            'news_data': news_data,
+                            'sentiment_summary': sentiment_summary,
+                            'backtest_results': backtest_results,
+                            'last_updated': datetime.now()
                         }
                         st.session_state.current_symbol = stock_symbol
-                        st.success(f"Successfully loaded data for {stock_symbol}")
+                        st.success(f"✅ Successfully loaded comprehensive data for {stock_symbol}")
                     else:
                         st.error(f"No data found for symbol '{stock_symbol}'. Please check the symbol and try again.")
                         st.session_state.stock_data = None
@@ -259,6 +291,19 @@ def main():
                     st.session_state.stock_data = None
         else:
             st.warning("Please enter a stock symbol")
+    
+    # Auto-refresh logic
+    if auto_refresh and 'stock_data' in st.session_state and st.session_state.stock_data:
+        # Create a placeholder for countdown
+        countdown_placeholder = st.empty()
+        
+        # Countdown timer
+        for remaining in range(refresh_interval, 0, -1):
+            countdown_placeholder.info(f"🔄 Auto-refresh in {remaining} seconds...")
+            time.sleep(1)
+        
+        countdown_placeholder.empty()
+        st.rerun()
     
     # Display data if available
     if st.session_state.stock_data:
@@ -334,6 +379,73 @@ def display_stock_analysis(chart_type):
         for reason in trading_signal['reasons']:
             st.write(f"• {reason}")
     
+    # News Sentiment Analysis Section
+    if data.get('news_data') and data.get('sentiment_summary'):
+        st.markdown("---")
+        st.subheader("📰 News Sentiment Analysis")
+        
+        sentiment_summary = data['sentiment_summary']
+        news_data = data['news_data']
+        
+        # Overall sentiment display
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            sentiment_color = "green" if sentiment_summary['overall_score'] > 0 else "red" if sentiment_summary['overall_score'] < 0 else "gray"
+            st.markdown(
+                f"<div style='padding: 10px; background-color: {sentiment_color}20; border-left: 5px solid {sentiment_color}; border-radius: 5px;'>"
+                f"<h4 style='color: {sentiment_color}; margin: 0;'>{sentiment_summary['overall_label']}</h4>"
+                f"<p style='margin: 0; color: #FAFAFA;'>Score: {sentiment_summary['overall_score']:.3f}</p>"
+                f"</div>", 
+                unsafe_allow_html=True
+            )
+        
+        with col2:
+            st.metric("Positive News", sentiment_summary['positive_count'], 
+                     help="Number of positive news articles")
+        
+        with col3:
+            st.metric("Negative News", sentiment_summary['negative_count'], 
+                     help="Number of negative news articles")
+        
+        with col4:
+            st.metric("Total Articles", sentiment_summary['total_articles'], 
+                     help="Total news articles analyzed")
+        
+        # News impact assessment
+        if sentiment_summary['overall_score'] != 0:
+            from utils.news_sentiment import NewsSentimentAnalyzer
+            analyzer = NewsSentimentAnalyzer()
+            impact_assessment = analyzer.get_sentiment_impact_on_price(sentiment_summary['overall_score'])
+            
+            st.info(f"**Market Impact Assessment:** {impact_assessment['expected_movement']} "
+                   f"(Confidence: {impact_assessment['confidence']:.0f}%)")
+        
+        # Recent news articles
+        st.subheader("📄 Recent News Articles")
+        for i, article in enumerate(news_data[:5]):  # Show top 5 articles
+            with st.expander(f"{article['title'][:80]}..." if len(article['title']) > 80 else article['title']):
+                col_content, col_sentiment = st.columns([3, 1])
+                
+                with col_content:
+                    st.write(f"**Source:** {article['source']}")
+                    st.write(f"**Published:** {article['published']}")
+                    if article['summary']:
+                        st.write(f"**Summary:** {article['summary'][:200]}...")
+                    if article['link']:
+                        st.markdown(f"[Read Full Article]({article['link']})")
+                
+                with col_sentiment:
+                    sentiment_color = "green" if article['sentiment_score'] > 0 else "red" if article['sentiment_score'] < 0 else "gray"
+                    st.markdown(
+                        f"<div style='text-align: center; padding: 10px; background-color: {sentiment_color}20; border-radius: 5px;'>"
+                        f"<strong style='color: {sentiment_color};'>{article['sentiment_label']}</strong><br>"
+                        f"<small>Score: {article['sentiment_score']:.3f}</small><br>"
+                        f"<small>Relevance: {article['relevance']:.2f}</small>"
+                        f"</div>", 
+                        unsafe_allow_html=True
+                    )
+    
     # Trading simulator actions
     if 'trading_mode' in locals() and trading_mode and trading_signal.get('signal') != 'UNKNOWN':
         col_buy, col_sell = st.columns(2)
@@ -391,6 +503,10 @@ def display_stock_analysis(chart_type):
     
     st.markdown("---")
     
+    # Real-time update indicator
+    last_updated = data.get('last_updated', datetime.now())
+    st.info(f"🕐 Last Updated: {last_updated.strftime('%Y-%m-%d %H:%M:%S')} | Next update in real-time mode")
+    
     # Header with basic info
     col1, col2, col3, col4 = st.columns(4)
     
@@ -428,7 +544,7 @@ def display_stock_analysis(chart_type):
     if chart_type == "Candlestick":
         fig = chart_generator.create_candlestick_chart(historical_data, symbol, trading_signal)
     elif chart_type == "Line":
-        fig = chart_generator.create_line_chart(historical_data, symbol)
+        fig = chart_generator.create_line_chart(historical_data, symbol, trading_signal)
     elif chart_type == "OHLC":
         fig = chart_generator.create_ohlc_chart(historical_data, symbol)
     elif chart_type == "Bollinger Bands":
@@ -588,6 +704,171 @@ def display_stock_analysis(chart_type):
             with col3:
                 total_return = total_portfolio_value - 1000.0  # Starting amount was $1000
                 st.metric("Total Return", f"${total_return:.2f}", f"{(total_return/1000.0)*100:.2f}%")
+    
+    # Backtesting Results Section
+    if data.get('backtest_results'):
+        st.markdown("---")
+        st.subheader("📊 Strategy Backtesting Results")
+        
+        backtest = data['backtest_results']
+        
+        # Performance overview
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            return_color = "green" if backtest['total_return_pct'] > 0 else "red"
+            st.markdown(
+                f"<div style='text-align: center; padding: 15px; background-color: {return_color}20; border-radius: 10px;'>"
+                f"<h3 style='color: {return_color}; margin: 0;'>{backtest['total_return_pct']:.2f}%</h3>"
+                f"<p style='margin: 0; color: #FAFAFA;'>Total Return</p>"
+                f"</div>", 
+                unsafe_allow_html=True
+            )
+        
+        with col2:
+            st.metric(
+                "Annualized Return", 
+                f"{backtest['annualized_return']:.2f}%",
+                help="Expected yearly return based on historical performance"
+            )
+        
+        with col3:
+            st.metric(
+                "Sharpe Ratio", 
+                f"{backtest['sharpe_ratio']:.2f}",
+                help="Risk-adjusted return (>1 is good, >2 is excellent)"
+            )
+        
+        with col4:
+            st.metric(
+                "Max Drawdown", 
+                f"{backtest['max_drawdown_pct']:.2f}%",
+                help="Largest peak-to-trough decline"
+            )
+        
+        # Trading statistics
+        st.subheader("📈 Trading Performance")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Trades", backtest['total_trades'])
+        
+        with col2:
+            win_rate_color = "green" if backtest['win_rate'] > 50 else "red"
+            st.markdown(
+                f"<div style='text-align: center; padding: 10px; background-color: {win_rate_color}20; border-radius: 5px;'>"
+                f"<strong style='color: {win_rate_color};'>{backtest['win_rate']:.1f}%</strong><br>"
+                f"<small>Win Rate</small>"
+                f"</div>", 
+                unsafe_allow_html=True
+            )
+        
+        with col3:
+            st.metric("Avg Win", f"${backtest['avg_win']:.2f}")
+        
+        with col4:
+            st.metric("Avg Loss", f"${backtest['avg_loss']:.2f}")
+        
+        # Performance chart
+        if backtest['daily_values'] and len(backtest['daily_values']) > 0:
+            st.subheader("📊 Portfolio Value Over Time")
+            
+            portfolio_df = pd.DataFrame({
+                'Date': pd.to_datetime(backtest['dates']) if backtest['dates'] else [],
+                'Portfolio Value': backtest['daily_values']
+            })
+            
+            if not portfolio_df.empty:
+                import plotly.graph_objects as go
+                
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=portfolio_df['Date'],
+                    y=portfolio_df['Portfolio Value'],
+                    mode='lines',
+                    name='Portfolio Value',
+                    line=dict(color='#00FF88', width=2)
+                ))
+                
+                # Add buy/sell signals to the chart
+                if backtest['buy_signals']:
+                    buy_dates = [signal['date'] for signal in backtest['buy_signals']]
+                    buy_values = [signal['price'] * (backtest['initial_capital'] / backtest['buy_signals'][0]['price']) for signal in backtest['buy_signals']]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=buy_dates,
+                        y=buy_values,
+                        mode='markers',
+                        name='Buy Signals',
+                        marker=dict(color='green', size=10, symbol='triangle-up')
+                    ))
+                
+                if backtest['sell_signals']:
+                    sell_dates = [signal['date'] for signal in backtest['sell_signals']]
+                    sell_values = [signal['price'] * (backtest['initial_capital'] / backtest['sell_signals'][0]['price']) for signal in backtest['sell_signals']]
+                    
+                    fig.add_trace(go.Scatter(
+                        x=sell_dates,
+                        y=sell_values,
+                        mode='markers',
+                        name='Sell Signals',
+                        marker=dict(color='red', size=10, symbol='triangle-down')
+                    ))
+                
+                fig.update_layout(
+                    title="Backtesting Results: Portfolio Performance",
+                    xaxis_title="Date",
+                    yaxis_title="Portfolio Value ($)",
+                    plot_bgcolor='#0E1117',
+                    paper_bgcolor='#262730',
+                    font=dict(color='#FAFAFA'),
+                    height=500
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+        
+        # Strategy assessment
+        st.subheader("🎯 Strategy Assessment")
+        
+        # Calculate strategy rating
+        score = 0
+        if backtest['total_return_pct'] > 10: score += 2
+        elif backtest['total_return_pct'] > 0: score += 1
+        
+        if backtest['sharpe_ratio'] > 1.5: score += 2
+        elif backtest['sharpe_ratio'] > 1: score += 1
+        
+        if backtest['win_rate'] > 60: score += 2
+        elif backtest['win_rate'] > 50: score += 1
+        
+        if backtest['max_drawdown_pct'] < 10: score += 2
+        elif backtest['max_drawdown_pct'] < 20: score += 1
+        
+        if score >= 7:
+            rating = "🟢 Excellent Strategy"
+            rating_color = "green"
+            recommendation = "Strong buy signal strategy with good risk management"
+        elif score >= 5:
+            rating = "🟡 Good Strategy"
+            rating_color = "orange"
+            recommendation = "Decent strategy but monitor risk levels"
+        elif score >= 3:
+            rating = "🟠 Average Strategy"
+            rating_color = "orange"
+            recommendation = "Strategy shows potential but needs improvement"
+        else:
+            rating = "🔴 Poor Strategy"
+            rating_color = "red"
+            recommendation = "Strategy underperforms - consider adjustments"
+        
+        st.markdown(
+            f"<div style='padding: 20px; background-color: {rating_color}20; border-left: 5px solid {rating_color}; border-radius: 10px;'>"
+            f"<h3 style='color: {rating_color}; margin: 0;'>{rating}</h3>"
+            f"<p style='margin: 10px 0 0 0; color: #FAFAFA;'>{recommendation}</p>"
+            f"<small style='color: #CCCCCC;'>Strategy Score: {score}/8</small>"
+            f"</div>", 
+            unsafe_allow_html=True
+        )
 
 def format_large_number(num):
     """Format large numbers with appropriate suffixes"""

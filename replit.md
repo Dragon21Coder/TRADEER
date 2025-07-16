@@ -50,6 +50,21 @@ The architecture emphasizes modularity and separation of concerns, with distinct
 - **Risk Assessment**: Signal strength scoring from -5 to +5
 - **Trade Recommendations**: STRONG BUY, BUY, HOLD, SELL, STRONG SELL classifications
 
+### Professional Trading Features
+- **News Sentiment Analysis**: Real-time news sentiment scoring using TextBlob
+  - Analyzes news headlines and summaries for market impact
+  - Provides sentiment scores and market impact assessments
+  - Displays relevance scoring for each news article
+- **Advanced Backtesting Engine**: Comprehensive strategy validation
+  - Historical performance analysis with detailed metrics
+  - Sharpe ratio, maximum drawdown, and volatility calculations
+  - Win/loss ratios and profit factor analysis
+  - Visual portfolio performance tracking with buy/sell signals
+- **Real-Time Updates**: Configurable auto-refresh intervals (5-60 seconds)
+  - Live data updates with timestamp tracking
+  - Real-time signal generation and chart updates
+  - Dynamic portfolio value monitoring
+
 ### External Integrations
 - **Yahoo Finance API**: Primary data source via `yfinance` library
 - **Plotly**: Interactive charting and visualization library
