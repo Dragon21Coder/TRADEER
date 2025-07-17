@@ -6,7 +6,7 @@ Application constants and configuration
 APP_NAME = "SUDNAXI"
 APP_FULL_NAME = "SUDNAXI Trading Intelligence Platform"
 APP_VERSION = "1.0.0"
-APP_DESCRIPTION = "Professional Stock Trading Analysis Platform"
+APP_DESCRIPTION = "Stock Trading Analysis Platform"
 
 # Market Configuration
 SUPPORTED_MARKETS = {
