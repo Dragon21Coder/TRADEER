@@ -125,11 +125,21 @@ def create_engine_and_session():
     """Create database engine and session"""
     try:
         db_url = get_database_url()
-        engine = create_engine(db_url)
+        
+        # Configure engine based on database type
+        if db_url.startswith('sqlite'):
+            engine = create_engine(db_url, echo=False, connect_args={"check_same_thread": False})
+        else:
+            engine = create_engine(db_url, echo=False)
+        
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         return engine, SessionLocal
     except Exception as e:
-        raise ValueError(f"Failed to create database engine: {str(e)}")
+        # Fallback to SQLite if main database fails
+        fallback_url = 'sqlite:///./trading_app.db'
+        engine = create_engine(fallback_url, echo=False, connect_args={"check_same_thread": False})
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        return engine, SessionLocal
 
 def init_database():
     """Initialize database tables"""
