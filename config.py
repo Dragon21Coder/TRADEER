@@ -3,29 +3,22 @@ Configuration settings for the trading application
 """
 import os
 
-# Try to load environment variables from .env file
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    # dotenv not available, use environment variables directly
     pass
 
 class Config:
     """Application configuration"""
     
-    # Database configuration
     DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./trading_app.db')
-    
-    # Application settings
     DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-    ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+    ENVIRONMENT = os.getenv('ENVIRONMENT', 'production')
     
-    # API Keys
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
     NEWS_API_KEY = os.getenv('NEWS_API_KEY')
     
-    # Streamlit configuration
     STREAMLIT_CONFIG = {
         'server.port': int(os.getenv('PORT', 8501)),
         'server.address': '0.0.0.0',
@@ -34,19 +27,15 @@ class Config:
         'server.enableXsrfProtection': False
     }
     
-    # Trading simulation settings
     INITIAL_BALANCE = 10000.0
-    MAX_POSITION_SIZE = 0.35  # 35% of portfolio
+    MAX_POSITION_SIZE = 0.35
     
-    # Data refresh intervals (in seconds)
     PRICE_REFRESH_INTERVAL = 60
-    NEWS_REFRESH_INTERVAL = 300  # 5 minutes
+    NEWS_REFRESH_INTERVAL = 300
     
-    # Feature flags
     ENABLE_NEWS_SENTIMENT = True
     ENABLE_BACKTESTING = True
     ENABLE_ML_FEATURES = True
     ENABLE_REAL_TIME_LEARNING = True
 
-# Create config instance
 config = Config()

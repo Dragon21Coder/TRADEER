@@ -48,6 +48,7 @@ def setup_database():
 def main():
     """Main setup function"""
     print("SUDNAXI Trading Platform Setup")
+    print("Professional Trading Intelligence System")
     print("=" * 50)
     
     try:

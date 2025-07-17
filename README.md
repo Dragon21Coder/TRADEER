@@ -39,32 +39,29 @@ So I built SUDNAXI to solve these problems once and for all.
 
 ## Getting Started
 
-I've made this as simple as possible to set up:
-
-### What You Need
-- Python 3.8+ (most people already have this)
-- 5 minutes of your time
+### Requirements
+- Python 3.8 or higher
+- Internet connection for market data
 
 ### Installation
 
-1. **Download** all the files to a new folder on your computer
-
-2. **Easy Setup** (I made a script for this):
-   ```bash
-   python setup.py
-   ```
-   That's it! The script handles everything.
-
-3. **Manual Setup** (if you prefer):
+1. **Clone or download** the project files
+2. **Install dependencies**:
    ```bash
    pip install -r production_requirements.txt
-   cp .env.example .env
-   streamlit run app.py --server.port=8501
    ```
+3. **Run the application**:
+   ```bash
+   python start_app.py
+   ```
+   Or use Streamlit directly:
+   ```bash
+   streamlit run app.py
+   ```
+4. **Open your browser** to `http://localhost:8501`
 
-4. **Open your browser** and go to `http://localhost:8501`
-
-You'll be trading in minutes, not hours.
+### PyCharm Users
+Run `start_app.py` directly in PyCharm instead of `app.py` to avoid context errors.
 
 ## Configuration
 
@@ -224,24 +221,29 @@ I've tested this extensively, but here are fixes for common issues:
 - Use a virtual environment (the setup script creates one)
 - Make sure you have admin rights on Windows
 
-## A Personal Note
+## Development Notes
 
-I've spent countless hours perfecting this system because I believe good tools make the difference between successful and struggling traders. This platform represents everything I wish I had when I started trading.
+This system was built with a focus on reliability, performance, and user experience. The architecture is designed to be maintainable and extensible, with clear separation of concerns between data processing, analysis, and presentation layers.
 
-The code is clean, well-documented, and built to last. I've included comprehensive error handling, fallback systems, and detailed documentation because I know how frustrating it is when things don't work.
-
-Feel free to modify, extend, or improve the system for your own needs. That's what good software should enable.
+Key design decisions:
+- SQLite for local development with PostgreSQL support for production
+- Modular architecture for easy feature additions
+- Comprehensive error handling and fallback mechanisms
+- Real-time data processing with intelligent caching
+- Professional UI/UX optimized for trading workflows
 
 ## License
 
-MIT License - Use it however you want, just don't blame me if you lose money trading! 😉
+MIT License - Open source and free to use.
 
-## Final Thoughts
+## Technical Support
 
-Trading is hard enough without bad tools making it harder. I hope SUDNAXI helps you make better decisions and find profitable opportunities.
-
-Good luck, and remember: the best trading system is the one you actually use consistently.
+For technical issues:
+- Check the troubleshooting section
+- Verify Python version compatibility
+- Ensure all dependencies are installed
+- Check database connections and API access
 
 ---
 
-**SUDNAXI** - Because trading should be about strategy, not struggling with tools.
+**SUDNAXI Trading Platform** - Professional Trading Intelligence System

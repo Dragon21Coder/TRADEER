@@ -14,48 +14,42 @@ from database.models import init_database, get_db_session
 
 # Configure page
 st.set_page_config(
-    page_title="Global Stock Analysis & Trading Dashboard",
-    page_icon="📈",
+    page_title="SUDNAXI - Professional Trading Intelligence",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Market-Ready Professional UI Styling
+# Professional UI Styling
 st.markdown("""
 <style>
-/* Import professional fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* Global styling overrides */
 .main .block-container {
     padding: 1rem 2rem;
     max-width: 100%;
     font-family: 'Inter', sans-serif;
 }
 
-/* Advanced gradient background */
 .stApp {
     background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 25%, #16213e 50%, #0a0e27 100%);
     background-attachment: fixed;
 }
 
-/* Professional metric cards */
 [data-testid="metric-container"] {
     background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
     border: 1px solid #475569;
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     transition: all 0.3s ease;
 }
 
 [data-testid="metric-container"]:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 255, 136, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 255, 136, 0.15);
 }
 
-/* Enhanced typography */
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', sans-serif;
     color: #f8fafc;
@@ -63,16 +57,15 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.025em;
 }
 
-/* Premium button styling */
 .stButton > button {
     background: linear-gradient(135deg, #00FF88 0%, #00D97F 50%, #00C777 100%);
     color: #000;
     border: none;
-    border-radius: 12px;
-    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    padding: 0.5rem 1.5rem;
     font-weight: 600;
     font-family: 'Inter', sans-serif;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
     box-shadow: 0 4px 16px rgba(0, 255, 136, 0.3);
     position: relative;
     overflow: hidden;

@@ -9,8 +9,8 @@ import os
 
 def main():
     """Launch the Streamlit app"""
-    print("🚀 Starting SUDNAXI Trading Platform...")
-    print("📊 Your professional trading intelligence system")
+    print("Starting SUDNAXI Trading Platform...")
+    print("Professional Trading Intelligence System")
     print("=" * 50)
     
     # Change to the script directory
@@ -18,9 +18,8 @@ def main():
     
     try:
         # Launch Streamlit
-        print("🌐 Opening your browser...")
-        print("📍 App will be available at: http://localhost:8501")
-        print("🔄 Press Ctrl+C to stop the server")
+        print("Opening browser at: http://localhost:8501")
+        print("Press Ctrl+C to stop the server")
         print("=" * 50)
         
         subprocess.run([
@@ -30,18 +29,18 @@ def main():
         ])
         
     except KeyboardInterrupt:
-        print("\n👋 Shutting down SUDNAXI Trading Platform...")
-        print("💡 Thanks for using SUDNAXI!")
+        print("\nShutting down SUDNAXI Trading Platform...")
+        print("Session ended.")
         
     except FileNotFoundError:
-        print("❌ Error: Streamlit not found!")
-        print("💡 Install it with: pip install streamlit")
-        print("💡 Or run: pip install -r production_requirements.txt")
+        print("Error: Streamlit not found!")
+        print("Install with: pip install streamlit")
+        print("Or run: pip install -r production_requirements.txt")
         
     except Exception as e:
-        print(f"❌ Error starting app: {e}")
-        print("💡 Make sure you're in the right directory")
-        print("💡 Try: pip install -r production_requirements.txt")
+        print(f"Error starting app: {e}")
+        print("Make sure you're in the correct directory")
+        print("Try: pip install -r production_requirements.txt")
 
 if __name__ == "__main__":
     main()
