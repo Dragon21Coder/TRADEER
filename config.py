@@ -2,16 +2,20 @@
 Configuration settings for the trading application
 """
 import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Try to load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available, use environment variables directly
+    pass
 
 class Config:
     """Application configuration"""
     
     # Database configuration
-    DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///trading_app.db')
+    DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./trading_app.db')
     
     # Application settings
     DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
