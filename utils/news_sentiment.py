@@ -30,66 +30,75 @@ class NewsSentimentAnalyzer:
             news = ticker.news
             
             if not news:
-                # Fallback: try to get basic info and create sample news entry
-                info = ticker.info
-                company_name = info.get('longName', symbol)
-                current_price = info.get('currentPrice', 0)
-                
-                # Create a basic news entry based on stock performance
-                analyzed_news = [{
-                    'title': f"{company_name} Stock Analysis - Current Trading Update",
-                    'summary': f"Current trading price for {symbol} is ${current_price:.2f}. Monitor technical indicators for trading opportunities.",
-                    'link': f"https://finance.yahoo.com/quote/{symbol}",
-                    'published': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    'source': 'Yahoo Finance',
-                    'sentiment_score': 0.0,
-                    'sentiment_label': 'Neutral',
-                    'relevance': 1.0
-                }]
-                return analyzed_news
+                print(f"No news found for {symbol}")
+                return []
             
             analyzed_news = []
             for article in news[:limit]:
-                # Clean and analyze the title and summary
-                title = article.get('title', '')
-                summary = article.get('summary', '')
-                
-                # Skip if both title and summary are empty
-                if not title and not summary:
+                try:
+                    # Extract data from the new Yahoo Finance API structure
+                    content = article.get('content', article)
+                    
+                    title = content.get('title', '')
+                    summary = content.get('summary', content.get('description', ''))
+                    
+                    # Skip if both title and summary are empty
+                    if not title and not summary:
+                        continue
+                    
+                    # Get link from various possible locations
+                    link = ''
+                    if 'canonicalUrl' in content:
+                        link = content['canonicalUrl'].get('url', '')
+                    elif 'clickThroughUrl' in content:
+                        link = content['clickThroughUrl'].get('url', '')
+                    elif 'link' in article:
+                        link = article['link']
+                    
+                    # Get source
+                    source = 'Yahoo Finance'
+                    if 'provider' in content:
+                        source = content['provider'].get('displayName', source)
+                    elif 'publisher' in article:
+                        source = article['publisher']
+                    
+                    # Get publish date
+                    published = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    if 'pubDate' in content:
+                        try:
+                            pub_date = datetime.fromisoformat(content['pubDate'].replace('Z', '+00:00'))
+                            published = pub_date.strftime("%Y-%m-%d %H:%M")
+                        except:
+                            pass
+                    elif 'providerPublishTime' in article:
+                        published = self._format_timestamp(article['providerPublishTime'])
+                    
+                    # Combine title and summary for sentiment analysis
+                    text_for_analysis = f"{title} {summary}"
+                    
+                    # Perform sentiment analysis
+                    sentiment_score, sentiment_label = self._analyze_sentiment(text_for_analysis)
+                    
+                    analyzed_news.append({
+                        'title': title,
+                        'summary': summary,
+                        'link': link,
+                        'published': published,
+                        'source': source,
+                        'sentiment_score': sentiment_score,
+                        'sentiment_label': sentiment_label,
+                        'relevance': self._calculate_relevance(text_for_analysis, symbol)
+                    })
+                    
+                except Exception as e:
+                    print(f"Error processing article: {e}")
                     continue
-                
-                # Combine title and summary for sentiment analysis
-                text_for_analysis = f"{title} {summary}"
-                
-                # Perform sentiment analysis
-                sentiment_score, sentiment_label = self._analyze_sentiment(text_for_analysis)
-                
-                analyzed_news.append({
-                    'title': title,
-                    'summary': summary,
-                    'link': article.get('link', ''),
-                    'published': self._format_timestamp(article.get('providerPublishTime', 0)),
-                    'source': article.get('publisher', 'Unknown'),
-                    'sentiment_score': sentiment_score,
-                    'sentiment_label': sentiment_label,
-                    'relevance': self._calculate_relevance(text_for_analysis, symbol)
-                })
             
             return analyzed_news
             
         except Exception as e:
             print(f"Error fetching news for {symbol}: {e}")
-            # Return a basic fallback news entry
-            return [{
-                'title': f"{symbol} Market Analysis",
-                'summary': f"Technical analysis available for {symbol}. Check trading signals and indicators for market insights.",
-                'link': '',
-                'published': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                'source': 'Trading Platform',
-                'sentiment_score': 0.0,
-                'sentiment_label': 'Neutral',
-                'relevance': 0.8
-            }]
+            return []
     
     def _analyze_sentiment(self, text: str) -> tuple:
         """

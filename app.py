@@ -534,8 +534,8 @@ def main():
                         # Calculate technical indicators
                         historical_data_with_indicators = fetcher.calculate_technical_indicators(historical_data.copy())
                         
-                        # Generate buy/sell signals
-                        trading_signal = fetcher.generate_buy_sell_signal(historical_data_with_indicators)
+                        # Generate buy/sell signals with market sentiment
+                        trading_signal = fetcher.generate_buy_sell_signal(historical_data_with_indicators, stock_symbol)
                         
                         # Fetch news sentiment if enabled
                         news_data = None
@@ -545,22 +545,18 @@ def main():
                                 with st.spinner("🔄 Analyzing news sentiment..."):
                                     news_analyzer = NewsSentimentAnalyzer()
                                     news_data = news_analyzer.get_stock_news(stock_symbol, limit=15)
-                                    sentiment_summary = news_analyzer.get_overall_sentiment(news_data)
-                                    st.success(f"✅ Analyzed {len(news_data)} news articles for sentiment")
+                                    
+                                    if news_data:
+                                        sentiment_summary = news_analyzer.get_overall_sentiment(news_data)
+                                        st.success(f"✅ Analyzed {len(news_data)} news articles for sentiment")
+                                    else:
+                                        st.info("📰 No recent news articles found for this stock")
+                                        news_data = None
+                                        sentiment_summary = None
                             except Exception as e:
                                 st.warning(f"News analysis temporarily unavailable: {e}")
-                                # Provide fallback data to ensure UI works
-                                news_data = [{
-                                    'title': f"{stock_symbol} Market Analysis",
-                                    'summary': f"Technical analysis shows current trading signals and market trends for {stock_symbol}.",
-                                    'link': '',
-                                    'published': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                    'source': 'Trading Platform',
-                                    'sentiment_score': 0.0,
-                                    'sentiment_label': 'Neutral',
-                                    'relevance': 0.8
-                                }]
-                                sentiment_summary = news_analyzer.get_overall_sentiment(news_data)
+                                news_data = None
+                                sentiment_summary = None
                         
                         # Run enhanced backtesting if enabled
                         backtest_results = None
@@ -697,6 +693,95 @@ def display_stock_analysis(chart_type):
         st.subheader("📋 Signal Analysis")
         for reason in trading_signal['reasons']:
             st.write(f"• {reason}")
+    
+    # Buy/Sell Ratio and Market Sentiment Section
+    if trading_signal.get('buy_sell_data'):
+        st.markdown("---")
+        
+        # Professional section header
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #262730 0%, #1a1a2e 100%); border-radius: 12px; padding: 1.5rem; margin: 1rem 0; border: 1px solid #404040;">
+            <h2 style="color: #00FF88; margin: 0; display: flex; align-items: center;">
+                📊 Market Sentiment & Analyst Consensus
+                <span style="margin-left: auto; font-size: 0.8rem; color: #CCCCCC;">Professional Analysis</span>
+            </h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        buy_sell_data = trading_signal['buy_sell_data']
+        
+        # Buy/Sell Ratio display
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            buy_color = "#00FF88" if buy_sell_data['buy_ratio'] > 50 else "#FFA500"
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center; background: linear-gradient(135deg, {buy_color}20 0%, {buy_color}10 100%);">
+                    <h3 style="color: {buy_color}; margin: 0; font-size: 2rem;">{buy_sell_data['buy_ratio']}%</h3>
+                    <p style="margin: 0.5rem 0 0 0; color: #FAFAFA;">Buy Ratio</p>
+                    <small style="color: #CCCCCC;">Bullish sentiment</small>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+        
+        with col2:
+            sell_color = "#FF4444" if buy_sell_data['sell_ratio'] > 50 else "#FFA500"
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center; background: linear-gradient(135deg, {sell_color}20 0%, {sell_color}10 100%);">
+                    <h3 style="color: {sell_color}; margin: 0; font-size: 2rem;">{buy_sell_data['sell_ratio']}%</h3>
+                    <p style="margin: 0.5rem 0 0 0; color: #FAFAFA;">Sell Ratio</p>
+                    <small style="color: #CCCCCC;">Bearish sentiment</small>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+        
+        with col3:
+            sentiment_color = "#00FF88" if buy_sell_data['sentiment_color'] == 'green' else "#FF4444" if buy_sell_data['sentiment_color'] == 'red' else "#FFD700"
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center; background: linear-gradient(135deg, {sentiment_color}20 0%, {sentiment_color}10 100%);">
+                    <h3 style="color: {sentiment_color}; margin: 0; font-size: 1.5rem;">{buy_sell_data['market_sentiment']}</h3>
+                    <p style="margin: 0.5rem 0 0 0; color: #FAFAFA;">Market Sentiment</p>
+                    <small style="color: #CCCCCC;">Overall direction</small>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+        
+        with col4:
+            upside_color = "#00FF88" if buy_sell_data['upside_potential'] > 0 else "#FF4444"
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align: center; background: linear-gradient(135deg, {upside_color}20 0%, {upside_color}10 100%);">
+                    <h3 style="color: {upside_color}; margin: 0; font-size: 1.5rem;">{buy_sell_data['upside_potential']:+.1f}%</h3>
+                    <p style="margin: 0.5rem 0 0 0; color: #FAFAFA;">Price Target</p>
+                    <small style="color: #CCCCCC;">Analyst consensus</small>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+        
+        # Analyst recommendations breakdown
+        if buy_sell_data['analyst_recommendations']:
+            st.subheader("📈 Analyst Recommendations")
+            rec_data = buy_sell_data['analyst_recommendations']
+            
+            rec_col1, rec_col2, rec_col3, rec_col4, rec_col5 = st.columns(5)
+            
+            with rec_col1:
+                st.metric("Strong Buy", rec_data['strong_buy'])
+            with rec_col2:
+                st.metric("Buy", rec_data['buy'])
+            with rec_col3:
+                st.metric("Hold", rec_data['hold'])
+            with rec_col4:
+                st.metric("Sell", rec_data['sell'])
+            with rec_col5:
+                st.metric("Strong Sell", rec_data['strong_sell'])
     
     # News Sentiment Analysis Section
     if data.get('news_data') and data.get('sentiment_summary'):

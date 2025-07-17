@@ -193,12 +193,132 @@ class StockDataFetcher:
             print(f"Error calculating technical indicators: {e}")
             return data
     
-    def generate_buy_sell_signal(self, data: pd.DataFrame) -> dict:
+    def get_buy_sell_ratio(self, symbol: str) -> dict:
         """
-        Generate buy/sell signals based on technical indicators
+        Calculate buy/sell ratio and market sentiment indicators
+        
+        Args:
+            symbol: Stock ticker symbol
+            
+        Returns:
+            Dictionary with buy/sell ratio and market sentiment data
+        """
+        try:
+            ticker = yf.Ticker(symbol)
+            info = ticker.info
+            
+            # Get institutional ownership data
+            institutional_holders = ticker.institutional_holders
+            major_holders = ticker.major_holders
+            
+            # Calculate buy/sell ratio based on various metrics
+            buy_indicators = 0
+            sell_indicators = 0
+            
+            # Check analyst recommendations
+            recommendations = ticker.recommendations
+            if recommendations is not None and not recommendations.empty:
+                latest_rec = recommendations.iloc[-1]
+                strong_buy = latest_rec.get('strongBuy', 0)
+                buy = latest_rec.get('buy', 0)
+                hold = latest_rec.get('hold', 0)
+                sell = latest_rec.get('sell', 0)
+                strong_sell = latest_rec.get('strongSell', 0)
+                
+                total_recs = strong_buy + buy + hold + sell + strong_sell
+                if total_recs > 0:
+                    buy_ratio = (strong_buy + buy) / total_recs
+                    sell_ratio = (sell + strong_sell) / total_recs
+                else:
+                    buy_ratio = 0.5
+                    sell_ratio = 0.5
+            else:
+                buy_ratio = 0.5
+                sell_ratio = 0.5
+            
+            # Get target price information
+            target_high = info.get('targetHighPrice', 0)
+            target_low = info.get('targetLowPrice', 0)
+            target_mean = info.get('targetMeanPrice', 0)
+            current_price = info.get('currentPrice', info.get('regularMarketPrice', 0))
+            
+            # Calculate price target sentiment
+            if target_mean and current_price:
+                price_upside = ((target_mean - current_price) / current_price) * 100
+                if price_upside > 10:
+                    buy_indicators += 2
+                elif price_upside > 0:
+                    buy_indicators += 1
+                elif price_upside < -10:
+                    sell_indicators += 2
+                elif price_upside < 0:
+                    sell_indicators += 1
+            
+            # Calculate overall buy/sell ratio
+            total_indicators = buy_indicators + sell_indicators
+            if total_indicators > 0:
+                calculated_buy_ratio = buy_indicators / total_indicators
+                calculated_sell_ratio = sell_indicators / total_indicators
+            else:
+                calculated_buy_ratio = 0.5
+                calculated_sell_ratio = 0.5
+            
+            # Combine analyst and calculated ratios
+            final_buy_ratio = (buy_ratio + calculated_buy_ratio) / 2
+            final_sell_ratio = (sell_ratio + calculated_sell_ratio) / 2
+            
+            # Determine market sentiment
+            if final_buy_ratio > 0.6:
+                market_sentiment = "Bullish"
+                sentiment_color = "green"
+            elif final_sell_ratio > 0.6:
+                market_sentiment = "Bearish"
+                sentiment_color = "red"
+            else:
+                market_sentiment = "Neutral"
+                sentiment_color = "yellow"
+            
+            return {
+                'buy_ratio': round(final_buy_ratio * 100, 1),
+                'sell_ratio': round(final_sell_ratio * 100, 1),
+                'hold_ratio': round((1 - final_buy_ratio - final_sell_ratio) * 100, 1),
+                'market_sentiment': market_sentiment,
+                'sentiment_color': sentiment_color,
+                'analyst_recommendations': {
+                    'strong_buy': strong_buy if 'strong_buy' in locals() else 0,
+                    'buy': buy if 'buy' in locals() else 0,
+                    'hold': hold if 'hold' in locals() else 0,
+                    'sell': sell if 'sell' in locals() else 0,
+                    'strong_sell': strong_sell if 'strong_sell' in locals() else 0
+                },
+                'target_price': target_mean,
+                'current_price': current_price,
+                'upside_potential': price_upside if 'price_upside' in locals() else 0
+            }
+            
+        except Exception as e:
+            print(f"Error calculating buy/sell ratio: {e}")
+            return {
+                'buy_ratio': 50.0,
+                'sell_ratio': 50.0,
+                'hold_ratio': 0.0,
+                'market_sentiment': 'Neutral',
+                'sentiment_color': 'yellow',
+                'analyst_recommendations': {
+                    'strong_buy': 0, 'buy': 0, 'hold': 0, 'sell': 0, 'strong_sell': 0
+                },
+                'target_price': 0,
+                'current_price': 0,
+                'upside_potential': 0
+            }
+    
+    def generate_buy_sell_signal(self, data: pd.DataFrame, symbol: str = None) -> dict:
+        """
+        Generate buy/sell signals based on technical indicators and market sentiment
         
         Args:
             data: Historical stock data with technical indicators
+            symbol: Stock ticker symbol for additional analysis
             
         Returns:
             Dictionary with signal information
@@ -247,6 +367,31 @@ class StockDataFetcher:
                 signals.append("High volume activity")
                 signal_strength += 0.5 if signal_strength > 0 else -0.5
             
+            # Get buy/sell ratio for additional confirmation
+            buy_sell_data = None
+            if symbol:
+                try:
+                    buy_sell_data = self.get_buy_sell_ratio(symbol)
+                    
+                    # Add buy/sell ratio to signal strength
+                    if buy_sell_data['buy_ratio'] > 60:
+                        signals.append(f"Analyst consensus bullish ({buy_sell_data['buy_ratio']}% buy)")
+                        signal_strength += 1
+                    elif buy_sell_data['sell_ratio'] > 60:
+                        signals.append(f"Analyst consensus bearish ({buy_sell_data['sell_ratio']}% sell)")
+                        signal_strength -= 1
+                    
+                    # Add target price sentiment
+                    if buy_sell_data['upside_potential'] > 15:
+                        signals.append(f"Strong upside potential (+{buy_sell_data['upside_potential']:.1f}%)")
+                        signal_strength += 1
+                    elif buy_sell_data['upside_potential'] < -15:
+                        signals.append(f"Downside risk ({buy_sell_data['upside_potential']:.1f}%)")
+                        signal_strength -= 1
+                        
+                except Exception as e:
+                    print(f"Error getting buy/sell ratio: {e}")
+            
             # Determine overall signal
             if signal_strength >= 3:
                 overall_signal = "STRONG BUY"
@@ -271,7 +416,8 @@ class StockDataFetcher:
                 'reasons': signals,
                 'rsi': latest['RSI'],
                 'macd': latest['MACD'],
-                'price_vs_sma20': ((latest['Close'] - latest['SMA_20']) / latest['SMA_20']) * 100
+                'price_vs_sma20': ((latest['Close'] - latest['SMA_20']) / latest['SMA_20']) * 100,
+                'buy_sell_data': buy_sell_data
             }
             
         except Exception as e:
@@ -283,5 +429,6 @@ class StockDataFetcher:
                 'reasons': ['Error calculating signals'],
                 'rsi': None,
                 'macd': None,
-                'price_vs_sma20': None
+                'price_vs_sma20': None,
+                'buy_sell_data': None
             }
