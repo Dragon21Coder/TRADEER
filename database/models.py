@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import os
+from config import config
 
 Base = declarative_base()
 
@@ -111,10 +112,8 @@ class MarketData(Base):
 
 # Database setup functions
 def get_database_url():
-    """Get database URL from environment variables"""
-    db_url = os.getenv('DATABASE_URL')
-    if not db_url:
-        raise ValueError("DATABASE_URL environment variable is not set")
+    """Get database URL from configuration"""
+    db_url = config.DATABASE_URL
     
     # Handle postgres:// URL format (convert to postgresql://)
     if db_url.startswith('postgres://'):
