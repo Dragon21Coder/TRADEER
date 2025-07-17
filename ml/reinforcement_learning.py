@@ -3,23 +3,40 @@ Reinforcement Learning Trading Agent with Real-time Strategy Adaptation
 """
 import numpy as np
 import pandas as pd
-import gym
-from gym import spaces
-from stable_baselines3 import PPO, A2C, DQN
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import DummyVecEnv
 from sklearn.preprocessing import StandardScaler
 from typing import Dict, List, Tuple, Optional
 import joblib
 import os
 from datetime import datetime, timedelta
 
-class TradingEnvironment(gym.Env):
+# Try to import RL dependencies, fallback if not available
+try:
+    import gym
+    from gym import spaces
+    from stable_baselines3 import PPO, A2C, DQN
+    from stable_baselines3.common.env_util import make_vec_env
+    from stable_baselines3.common.vec_env import DummyVecEnv
+    HAS_RL_DEPS = True
+except ImportError:
+    HAS_RL_DEPS = False
+    # Create dummy classes for compatibility
+    class Env:
+        pass
+    class spaces:
+        @staticmethod
+        def Discrete(n):
+            return None
+        @staticmethod
+        def Box(low, high, shape, dtype):
+            return None
+
+class TradingEnvironment(Env if HAS_RL_DEPS else object):
     """Custom Trading Environment for Reinforcement Learning"""
     
     def __init__(self, data: pd.DataFrame, initial_balance: float = 10000, 
                  lookback_window: int = 20, transaction_cost: float = 0.001):
-        super(TradingEnvironment, self).__init__()
+        if HAS_RL_DEPS:
+            super(TradingEnvironment, self).__init__()
         
         self.data = data.reset_index(drop=True)
         self.initial_balance = initial_balance
@@ -191,6 +208,17 @@ class ReinforcementLearningTrader:
     def train_model(self, data: pd.DataFrame, episodes: int = 10000, 
                    save_path: str = None) -> Dict:
         """Train the RL model on historical data"""
+        
+        if not HAS_RL_DEPS:
+            print("Warning: RL dependencies not available. Using fallback basic strategy.")
+            return {
+                'algorithm': 'Fallback',
+                'training_episodes': 0,
+                'final_return': 0.0,
+                'sharpe_ratio': 0.0,
+                'max_drawdown': 0.0,
+                'warning': 'RL dependencies not available'
+            }
         
         # Create training environment
         env = TradingEnvironment(data)

@@ -112,13 +112,25 @@ class MarketData(Base):
 # Database setup functions
 def get_database_url():
     """Get database URL from environment variables"""
-    return os.getenv('DATABASE_URL', 'postgresql://localhost/trading_db')
+    db_url = os.getenv('DATABASE_URL')
+    if not db_url:
+        raise ValueError("DATABASE_URL environment variable is not set")
+    
+    # Handle postgres:// URL format (convert to postgresql://)
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    
+    return db_url
 
 def create_engine_and_session():
     """Create database engine and session"""
-    engine = create_engine(get_database_url())
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    return engine, SessionLocal
+    try:
+        db_url = get_database_url()
+        engine = create_engine(db_url)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        return engine, SessionLocal
+    except Exception as e:
+        raise ValueError(f"Failed to create database engine: {str(e)}")
 
 def init_database():
     """Initialize database tables"""
