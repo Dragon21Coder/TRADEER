@@ -1,6 +1,6 @@
-# Download Instructions for SUDNAXI Trading Platform
+# How to Get Your Copy of SUDNAXI
 
-## How to Download the Complete Project
+## Download Your Trading Platform
 
 ### Method 1: Download from Current Directory
 
