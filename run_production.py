@@ -40,18 +40,17 @@ def install_dependencies():
 def run_app():
     """Run the Streamlit application"""
     print("Starting SUDNAXI Trading Platform...")
+    print("This will open your browser automatically...")
     
     # Set Streamlit configuration
     os.environ['STREAMLIT_SERVER_PORT'] = '8501'
     os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
-    os.environ['STREAMLIT_SERVER_HEADLESS'] = 'true'
     
     # Run the app
     subprocess.run([
         sys.executable, '-m', 'streamlit', 'run', 'app.py',
         '--server.port=8501',
-        '--server.address=0.0.0.0',
-        '--server.headless=true'
+        '--server.address=0.0.0.0'
     ])
 
 def main():
